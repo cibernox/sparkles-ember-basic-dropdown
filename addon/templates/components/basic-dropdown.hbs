@@ -1,2 +1,6 @@
-Hello from inside basic dropdown
-
+<div class="basic-dropdown-default-class" ...attributes>
+  {{yield (hash
+    trigger=(component (or @triggerComponent "basic-dropdown-trigger"))
+    content=(component (or @contentComponent "basic-dropdown-content"))
+  )}}
+</div>

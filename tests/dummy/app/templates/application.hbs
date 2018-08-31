@@ -1,3 +1,6 @@
 <h2 id="title">Welcome to Ember</h2>
 
-<BasicDropdown></BasicDropdown>
+<BasicDropdown class="my-wrapper" as |dd|>
+  <dd.trigger class="my-trigger" title="the-title">Click me</dd.trigger>
+  <dd.content class="my-content">Things inside</dd.content>
+</BasicDropdown>
