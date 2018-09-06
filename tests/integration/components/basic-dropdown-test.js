@@ -6,6 +6,25 @@ import hbs from 'htmlbars-inline-precompile';
 module('Integration | Component | basic-dropdown', function(hooks) {
   setupRenderingTest(hooks);
 
+  test('Clicking on the trigger displays and hides the content passed to the `dd.Content` component', async function(assert) {
+    assert.expect(3);
+
+    await render(hbs`
+      <BasicDropdown @foo="bar" as |dd|>
+        <dd.Trigger>Click me</dd.Trigger>
+        <dd.Content>
+          <div id="dropdown-is-opened">Content!</div>
+        </dd.Content>
+      </BasicDropdown>
+    `);
+
+    assert.dom('#dropdown-is-opened').doesNotExist('The dropdown is closed');
+    await click('.ember-basic-dropdown-trigger');
+    assert.dom('#dropdown-is-opened').exists('The dropdown is opened');
+    await click('.ember-basic-dropdown-trigger');
+    assert.dom('#dropdown-is-opened').doesNotExist('The dropdown is closed again');
+  });
+
   test('Its `toggle` action opens and closes the dropdown', async function (assert) {
     assert.expect(3);
 
