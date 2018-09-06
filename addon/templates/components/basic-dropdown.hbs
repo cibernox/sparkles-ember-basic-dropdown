@@ -1,6 +1,20 @@
 <div class="basic-dropdown-default-class" ...attributes>
-  {{yield (hash
-    trigger=(component (or @triggerComponent "basic-dropdown-trigger"))
-    content=(component (or @contentComponent "basic-dropdown-content"))
-  )}}
+  {{yield
+    (hash
+      uniqueId=this.publicAPI.uniqueId
+      isOpen=this.publicAPI.isOpen
+      disabled=this.publicAPI.disabled
+      actions=this.publicAPI.actions
+      Trigger=(
+        component
+        (or @triggerComponent "basic-dropdown-trigger")
+        dropdown=this.publicAPI
+      )
+      Content=(
+        component
+        (or @contentComponent "basic-dropdown-content")
+        dropdown=this.publicAPI
+      )
+    )
+  }}
 </div>
