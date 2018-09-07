@@ -1,6 +1,6 @@
 <button
   type="button"
-  class="ember-basic-dropdown-trigger"
+  class="ember-basic-dropdown-trigger{{if @renderInPlace " ember-basic-dropdown-trigger--in-place"}}{{if @vPosition (concat " ember-basic-dropdown-trigger--" @vPosition)}}{{if @hPosition (concat " ember-basic-dropdown-trigger--" @hPosition)}}"
   data-ebd-id={{@dropdown.uniqueId}}
   ...attributes
 >

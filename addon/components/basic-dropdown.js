@@ -14,6 +14,8 @@ export default class BasicDropdown extends Component {
   right = null;
   width = null;
   height = null;
+  @tracked hPosition = null;
+  @tracked vPosition = null;
   @tracked publicAPI = {
     uniqueId: guidFor(this),
     isOpen: this.args.initiallyOpened || false,

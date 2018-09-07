@@ -9,12 +9,18 @@
         component
         (or @triggerComponent "basic-dropdown-trigger")
         dropdown=this.publicAPI
+        hPosition=this.hPosition
+        renderInPlace=@renderInPlace
+        vPosition=this.vPosition
       )
       Content=(
         component
         (or @contentComponent "basic-dropdown-content")
         dropdown=this.publicAPI
         destination=this.destination
+        hPosition=this.hPosition
+        renderInPlace=@renderInPlace
+        vPosition=this.vPosition
       )
     )
   }}
