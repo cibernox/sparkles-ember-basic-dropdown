@@ -8,14 +8,13 @@
       {{#if @overlay}}
         <div class="ember-basic-dropdown-overlay"></div>
       {{/if}}
-      <div class="ember-basic-dropdown-content" ...attributes>
+      <div id="ember-basic-dropdown-content-{{@dropdown.uniqueId}}" class="ember-basic-dropdown-content{{if renderInPlace " ember-basic-dropdown-content--in-place"}}" ...attributes>
         {{yield}}
       </div>
       {{!-- {{#basic-dropdown/content-element
         tagName=_contentTagName
         id=dropdownId
-        class=(concat "ember-basic-dropdown-content " class " " defaultClass " " (if renderInPlace "ember-basic-dropdown-content--in-place ") (if hPosition (concat "ember-basic-dropdown-content--" hPosition)) " " (if vPosition (concat "ember-basic-dropdown-content--"
-        vPosition)) " " animationClass)
+        class=(concat "ember-basic-dropdown-content " class " " defaultClass " " (if renderInPlace "ember-basic-dropdown-content--in-place ") (if hPosition (concat "ember-basic-dropdown-content--" hPosition)) " " (if vPosition (concat "ember-basic-dropdown-content--" vPosition)) " " animationClass)
         style=style
         dir=dir}}
         {{yield}}
