@@ -40,6 +40,20 @@ export default class BasicDropdown extends Component {
     return config['ember-basic-dropdown'] && config['ember-basic-dropdown'].destination || 'ember-basic-dropdown-wormhole';
   }
 
+  constructor(args) {
+    super(args);
+    this._previousArgs = args;
+  }
+
+  didUpdate() {
+    if (this.args.disabled && !this._previousArgs.disabled) {
+      this._disable();
+    } else if (this._previousArgs.disabled && !this.args.disabled) {
+      this._enable();
+    }
+    this._previousArgs = this.args;
+  }
+
   open(e) {
     if (
       this.publicAPI.disabled ||
@@ -165,5 +179,16 @@ export default class BasicDropdown extends Component {
     this.previousHorizontalPosition = positions.horizontalPosition;
     this.previousVerticalPosition = positions.verticalPosition;
     return changes;
+  }
+
+  _disable() {
+    if (this.publicAPI.isOpen) {
+      this.publicAPI.actions.close();
+    }
+    this._updateState({ disabled: true });
+  }
+
+  _enable() {
+    this._updateState({ disabled: false });
   }
 }
