@@ -359,4 +359,50 @@ module('Integration | Component | basic-dropdown', function(hooks) {
     await click('.ember-basic-dropdown-trigger');
     assert.dom('.ember-basic-dropdown-content').hasClass('ember-basic-dropdown-content--above', 'The content has a class indicating that it was placed above the trigger');
   });
+
+  test('It adds a wrapper element when `renderInPlace=true`', async function (assert) {
+    assert.expect(2);
+
+    await render(hbs`
+      <BasicDropdown @renderInPlace=true as |dd|>
+        <dd.Trigger>Click me</dd.Trigger>
+        <dd.Content><div id="dropdown-is-opened"></div></dd.Content>
+      </BasicDropdown>
+    `);
+
+    await click('.ember-basic-dropdown-trigger');
+    assert.dom('.ember-basic-dropdown').exists();
+    assert.dom('.ember-basic-dropdown-trigger').hasClass('ember-basic-dropdown-trigger--in-place', 'The trigger has a special `--in-place` class');
+  });
+
+  test('When rendered in-place, it prefers right over left with position "auto-right"', async function (assert) {
+    assert.expect(2);
+
+    await render(hbs`
+      <BasicDropdown @renderInPlace=true @horizontalPosition="auto-right" as |dd|>
+        <dd.Trigger>Press me</dd.Trigger>
+        <dd.Content><h3>Content of the dropdown</h3></dd.Content>
+      </BasicDropdown>
+    `);
+
+    await click('.ember-basic-dropdown-trigger');
+    assert.dom('.ember-basic-dropdown-trigger').hasClass('ember-basic-dropdown-trigger--right', 'The proper class has been added');
+    assert.dom('.ember-basic-dropdown-content').hasClass('ember-basic-dropdown-content--right', 'The proper class has been added');
+  });
+
+  test('When rendered in-place, it applies right class for position "right"', async function (assert) {
+    assert.expect(2);
+
+    await render(hbs`
+      <BasicDropdown @renderInPlace=true @horizontalPosition="right" as |dd|>
+        <dd.Trigger>Press me</dd.Trigger>
+        <dd.Content><h3>Content of the dropdown</h3></dd.Content>
+      </BasicDropdown>
+    `);
+
+    await click('.ember-basic-dropdown-trigger');
+    assert.dom('.ember-basic-dropdown-trigger').hasClass('ember-basic-dropdown-trigger--right', 'The proper class has been added');
+    assert.dom('.ember-basic-dropdown-content').hasClass('ember-basic-dropdown-content--right', 'The proper class has been added');
+  });
+
 });

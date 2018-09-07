@@ -1,27 +1,29 @@
-<div class="basic-dropdown-default-class" ...attributes>
-  {{yield
-    (hash
-      uniqueId=this.publicAPI.uniqueId
-      isOpen=this.publicAPI.isOpen
-      disabled=this.publicAPI.disabled
-      actions=this.publicAPI.actions
-      Trigger=(
-        component
-        (or @triggerComponent "basic-dropdown-trigger")
-        dropdown=this.publicAPI
-        hPosition=this.hPosition
-        renderInPlace=@renderInPlace
-        vPosition=this.vPosition
-      )
-      Content=(
-        component
-        (or @contentComponent "basic-dropdown-content")
-        dropdown=this.publicAPI
-        destination=this.destination
-        hPosition=this.hPosition
-        renderInPlace=@renderInPlace
-        vPosition=this.vPosition
-      )
-    )
-  }}
-</div>
+{{#with (hash
+  uniqueId=this.publicAPI.uniqueId
+  isOpen=this.publicAPI.isOpen
+  disabled=this.publicAPI.disabled
+  actions=this.publicAPI.actions
+  Trigger=(
+    component
+    (or @triggerComponent "basic-dropdown-trigger")
+    dropdown=this.publicAPI
+    hPosition=this.hPosition
+    renderInPlace=@renderInPlace
+    vPosition=this.vPosition
+  )
+  Content=(
+    component
+    (or @contentComponent "basic-dropdown-content")
+    dropdown=this.publicAPI
+    destination=this.destination
+    hPosition=this.hPosition
+    renderInPlace=@renderInPlace
+    vPosition=this.vPosition
+  )
+) as |api|}}
+  {{#if @renderInPlace}}
+    <div class="ember-basic-dropdown" ...attributes>{{yield api}}</div>
+  {{else}}
+    {{yield api}}
+  {{/if}}
+{{/with}}
