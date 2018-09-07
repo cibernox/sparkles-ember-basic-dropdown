@@ -52,7 +52,7 @@
     "eslint-plugin-node": "^7.0.1",
     "loader.js": "^4.7.0",
     "qunit-dom": "^0.7.1",
-    "sparkles-component": "1.0.2"
+    "sparkles-component": "^1.0.3"
   },
   "engines": {
     "node": "6.* || 8.* || >= 10.*"

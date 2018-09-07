@@ -6319,9 +6319,9 @@ sourcemap-validator@^1.1.0:
     lodash.template "~2.3.x"
     source-map "~0.1.x"
 
-sparkles-component@1.0.2:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/sparkles-component/-/sparkles-component-1.0.2.tgz#f840d6ac3b958922e49ef6c9e1b73483e565c2b2"
+sparkles-component@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/sparkles-component/-/sparkles-component-1.0.3.tgz#bd71f3bee53f8692665ce043fbb3a8c00862b298"
   dependencies:
     ember-cli-babel "^6.16.0"
 

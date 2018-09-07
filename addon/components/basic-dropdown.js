@@ -20,24 +20,13 @@ export default class BasicDropdown extends Component {
     if (this.args.destination !== undefined) {
       return this.args.destination;
     }
-    // let config = getOwner(this).resolveRegistration('config:environment');
-    // debugger;
-    // if (config.environment === 'test') {
+    let config = getOwner(this).resolveRegistration('config:environment');
+    if (config.environment === 'test') {
       if (DEBUG) {
-        let id;
-        if (requirejs.has('@ember/test-helpers/dom/get-root-element')) {
-          try {
-            id = requirejs('@ember/test-helpers/dom/get-root-element').default().id;
-          } catch (ex) {
-            id = document.querySelector('#ember-testing > .ember-view').id;
-          }
-        } else {
-          id = document.querySelector('#ember-testing > .ember-view').id;
-        }
-        return id;
+        return requirejs('@ember/test-helpers/dom/get-root-element').default().id;
       }
-    // }
-    // return config['ember-basic-dropdown'] && config['ember-basic-dropdown'].destination || 'ember-basic-dropdown-wormhole';
+    }
+    return config['ember-basic-dropdown'] && config['ember-basic-dropdown'].destination || 'ember-basic-dropdown-wormhole';
   }
 
   open(e) {
