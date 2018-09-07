@@ -119,6 +119,9 @@ export default class BasicDropdown extends Component {
 
   _updateState(changes) {
     this.publicAPI = Object.assign({}, this.publicAPI, changes);
+    if (this.args.registerAPI) {
+      this.args.registerAPI(this.publicAPI);
+    }
   }
 
   _applyReposition(_trigger, dropdown, positions) {

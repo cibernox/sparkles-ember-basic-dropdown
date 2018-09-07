@@ -2,6 +2,7 @@ import { module, test, skip } from 'qunit';
 import { setupRenderingTest } from 'ember-qunit';
 import { render, click, triggerEvent } from '@ember/test-helpers';
 import hbs from 'htmlbars-inline-precompile';
+import { schedule } from '@ember/runloop';
 
 module('Integration | Component | basic-dropdown', function(hooks) {
   setupRenderingTest(hooks);
@@ -452,4 +453,29 @@ module('Integration | Component | basic-dropdown', function(hooks) {
     this.set('isDisabled', true);
     assert.dom('#dropdown-is-opened').doesNotExist('The select is now closed');
   });
+
+  test('If the component\'s `disabled` property changes, the `registerAPI` action is called', async function (assert) {
+    assert.expect(3);
+
+    this.isDisabled = false;
+    this.toggleDisabled = () => this.toggleProperty('isDisabled');
+    this.registerAPI = (api) => schedule('actions', () => this.set('remoteController', api));
+    await render(hbs`
+      <BasicDropdown @disabled={{isDisabled}} @registerAPI={{action registerAPI}} as |dd|>
+        <dd.Trigger>Click me</dd.Trigger>
+      </BasicDropdown>
+      <button onclick={{action toggleDisabled}}>Toggle</button>
+      {{#if remoteController.disabled}}
+        <div id="is-disabled"></div>
+      {{/if}}
+    `);
+
+    await click('.ember-basic-dropdown-trigger');
+    assert.dom('#is-disabled').doesNotExist('The select is enabled');
+    this.set('isDisabled', true);
+    assert.dom('#is-disabled').exists('The select is disabled');
+    this.set('isDisabled', false);
+    assert.dom('#is-disabled').doesNotExist('The select is enabled again');
+  });
+
 });
