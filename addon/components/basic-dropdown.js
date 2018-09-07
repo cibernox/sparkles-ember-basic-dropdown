@@ -14,19 +14,24 @@ export default class BasicDropdown extends Component {
   right = null;
   width = null;
   height = null;
+  _actions = {
+    open: this.open.bind(this),
+    close: this.close.bind(this),
+    toggle: this.toggle.bind(this),
+    reposition: this.reposition.bind(this)
+  };
   @tracked hPosition = null;
   @tracked vPosition = null;
-  @tracked publicAPI = {
-    uniqueId: guidFor(this),
-    isOpen: this.args.initiallyOpened || false,
-    disabled: this.args.disabled || false,
-    actions: {
-      open: this.open.bind(this),
-      close: this.close.bind(this),
-      toggle: this.toggle.bind(this),
-      reposition: this.reposition.bind(this)
-    }
-  };
+  @tracked('this.args.disabled')
+  get publicAPI() {
+    debugger;
+    return {
+      uniqueId: guidFor(this),
+      isOpen: this.args.initiallyOpened || false,
+      disabled: this.args.disabled || false,
+      actions: this._actions
+    };
+  }
   get destination() {
     if (this.args.destination !== undefined) {
       return this.args.destination;

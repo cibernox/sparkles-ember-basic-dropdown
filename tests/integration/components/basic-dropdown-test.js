@@ -2,6 +2,7 @@ import { module, test, skip } from 'qunit';
 import { setupRenderingTest } from 'ember-qunit';
 import { render, click, triggerEvent } from '@ember/test-helpers';
 import hbs from 'htmlbars-inline-precompile';
+import { run } from '@ember/runloop';
 
 module('Integration | Component | basic-dropdown', function(hooks) {
   setupRenderingTest(hooks);
@@ -404,5 +405,53 @@ module('Integration | Component | basic-dropdown', function(hooks) {
     assert.dom('.ember-basic-dropdown-trigger').hasClass('ember-basic-dropdown-trigger--right', 'The proper class has been added');
     assert.dom('.ember-basic-dropdown-content').hasClass('ember-basic-dropdown-content--right', 'The proper class has been added');
   });
+
+  test('It passes the `disabled` property as part of the public API, and updates is if it changes', async function (assert) {
+    assert.expect(2);
+    this.disabled = true;
+    await render(hbs`
+      <BasicDropdown @disabled={{this.disabled}} as |dd|>
+        {{#if dd.disabled}}
+          <div id="disabled-dropdown-marker">Disabled!</div>
+        {{else}}
+          <div id="enabled-dropdown-marker">Enabled!</div>
+        {{/if}}
+      </BasicDropdown>
+    `);
+
+    assert.dom('#disabled-dropdown-marker').exists('The public API of the component is marked as disabled');
+    run(() => this.set('disabled', false));
+    assert.dom('#enabled-dropdown-marker').exists('The public API of the component is marked as enabled');
+  });
+
+  // test('It passes the `uniqueId` property as part of the public API', async function (assert) {
+  //   assert.expect(1);
+  //   this.disabled = true;
+
+  //   await render(hbs`
+  //     <BasicDropdown as |dd|>
+  //       <div id="dropdown-unique-id-container">{{dd.uniqueId}}</div>
+  //     </BasicDropdown>
+  //   `);
+
+  //   assert.dom('#dropdown-unique-id-container').hasText(/ember\d+/, 'It yields the uniqueId');
+  // });
+
+  // test('If the dropdown gets disabled while it\'s open, it closes automatically', async function (assert) {
+  //   assert.expect(2);
+
+  //   this.isDisabled = false;
+  //   await render(hbs`
+  //     <BasicDropdown @disabled=isDisabled as |dd|>
+  //       <dd.Trigger>Click me</dd.Trigger>
+  //       <dd.Content><div id="dropdown-is-opened"></div></dd.Content>
+  //     </BasicDropdown>
+  //   `);
+
+  //   await click(".ember-basic-dropdown-trigger");
+  //   assert.dom('#dropdown-is-opened').exists('The select is open');
+  //   run(() => this.set('isDisabled', true));
+  //   assert.dom('#dropdown-is-opened').doesNotExist('The select is now closed');
+  // });
 
 });
