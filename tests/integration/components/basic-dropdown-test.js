@@ -478,4 +478,20 @@ module('Integration | Component | basic-dropdown', function(hooks) {
     assert.dom('#is-disabled').doesNotExist('The select is enabled again');
   });
 
+
+  test('It can receive `destination=id-of-elmnt` to customize where `#-in-element` is going to render the content', async function (assert) {
+    assert.expect(1);
+
+    await render(hbs`
+      <BasicDropdown @destination="id-of-elmnt" as |dd|>
+        <dd.Trigger>Click me</dd.Trigger>
+        <dd.Content>Hello</dd.Content>
+      </BasicDropdown>
+      <div id="id-of-elmnt"></div>
+    `);
+
+    await click('.ember-basic-dropdown-trigger');
+    assert.dom(this.element.querySelector('.ember-basic-dropdown-content').parentNode).hasAttribute('id', 'id-of-elmnt', 'The content has been rendered in an alternative destination');
+  });
+
 });
