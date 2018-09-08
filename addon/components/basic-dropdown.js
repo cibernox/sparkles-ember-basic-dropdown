@@ -16,17 +16,7 @@ export default class BasicDropdown extends Component {
   height = null;
   @tracked hPosition = null;
   @tracked vPosition = null;
-  @tracked publicAPI = {
-    uniqueId: guidFor(this),
-    isOpen: this.args.initiallyOpened || false,
-    disabled: this.args.disabled || false,
-    actions: {
-      open: this.open.bind(this),
-      close: this.close.bind(this),
-      toggle: this.toggle.bind(this),
-      reposition: this.reposition.bind(this)
-    }
-  };
+  @tracked publicAPI = {};
   contentId = `ember-basic-dropdown-content-${this.publicAPI.uniqueId}`;
   get destination() {
     if (this.args.destination !== undefined) {
@@ -44,6 +34,17 @@ export default class BasicDropdown extends Component {
   constructor(args) {
     super(args);
     this._previousArgs = args;
+    this._updateState({
+      uniqueId: guidFor(this),
+      isOpen: this.args.initiallyOpened || false,
+      disabled: this.args.disabled || false,
+      actions: {
+        open: this.open.bind(this),
+        close: this.close.bind(this),
+        toggle: this.toggle.bind(this),
+        reposition: this.reposition.bind(this)
+      }
+    });
   }
 
   didUpdate() {

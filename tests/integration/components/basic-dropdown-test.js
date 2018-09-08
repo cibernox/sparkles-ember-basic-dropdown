@@ -657,4 +657,61 @@ module('Integration | Component | basic-dropdown', function(hooks) {
     await click('.ember-basic-dropdown-trigger');
     assert.dom('#my-custom-content').exists('The custom component has been rendered');
   });
+
+  // State replacement
+  test('When the component is opened, closed or disabled, the entire publicAPI is changed (kind-of)', async function (assert) {
+    assert.expect(5);
+    this.owner.register("component:trigger-with-did-update", class extends Component {
+      constructor(args) {
+        super(args);
+        this._oldDropdown = this.args.dropdown;
+      }
+
+      didUpdate() {
+        assert.equal(this._oldDropdown.isOpen, false)
+        assert.equal(this.args.dropdown.isOpen, true)
+        assert.notEqual(this.args.dropdown, this._oldDropdown);
+      }
+    });
+    this.owner.register(
+      'template:components/trigger-with-did-update',
+      hbs`<div class="ember-basic-dropdown-trigger" onclick={{@dropdown.actions.toggle}}>{{yield}}</div>`
+    );
+    await render(hbs`
+      <BasicDropdown @triggerComponent="trigger-with-did-update" as |dd|>
+        <dd.Trigger>Open me</dd.Trigger>
+        <dd.Content><div id="dropdown-is-opened">Content of the dropdown</div></dd.Content>
+      </BasicDropdown>
+    `);
+
+    assert.dom('#dropdown-is-opened').doesNotExist();
+    await click('.ember-basic-dropdown-trigger');
+    assert.dom('#dropdown-is-opened').exists();
+  });
+
+  test('The registerAPI is called with every mutation of the publicAPI object', async function (assert) {
+    assert.expect(7);
+    let apis = [];
+    this.disabled = false;
+    this.registerAPI = function (api) {
+      apis.push(api);
+    };
+    await render(hbs`
+      <BasicDropdown @disabled={{this.disabled}} @registerAPI={{this.registerAPI}} as |dd|>
+        <dd.Trigger>Open me</dd.Trigger>
+        <dd.Content><h3>Content of the dropdown</h3></dd.Content>
+      </BasicDropdown>
+    `);
+
+    await click('.ember-basic-dropdown-trigger');
+    await click('.ember-basic-dropdown-trigger');
+    assert.equal(apis.length, 3, 'There have been 3 changes in the state of the public API');
+    assert.equal(apis[0].isOpen, false, 'The component was closed');
+    assert.equal(apis[1].isOpen, true, 'Then it opened');
+    assert.equal(apis[2].isOpen, false, 'Then it closed again');
+    this.set('disabled', true);
+    assert.equal(apis.length, 4, 'There have been 4 changes now');
+    assert.equal(apis[2].disabled, false, 'the component was enabled');
+    assert.equal(apis[3].disabled, true, 'and it became disabled');
+  });
 });
