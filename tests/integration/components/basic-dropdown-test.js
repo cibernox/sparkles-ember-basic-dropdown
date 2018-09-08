@@ -3,8 +3,19 @@ import { setupRenderingTest } from 'ember-qunit';
 import { render, click, triggerEvent } from '@ember/test-helpers';
 import hbs from 'htmlbars-inline-precompile';
 import { schedule } from '@ember/runloop';
+import { registerDeprecationHandler } from '@ember/debug';
+import { run } from '@ember/runloop';
+import Component from 'sparkles-component';
+
+let deprecations = [];
+
+registerDeprecationHandler((message, options, next) => {
+  deprecations.push(message);
+  next(message, options);
+});
 
 module('Integration | Component | basic-dropdown', function(hooks) {
+  hooks.beforeEach(() => deprecations = []);
   setupRenderingTest(hooks);
 
   test('Clicking on the trigger displays and hides the content passed to the `dd.Content` component', async function(assert) {
@@ -507,5 +518,143 @@ module('Integration | Component | basic-dropdown', function(hooks) {
     await click('.ember-basic-dropdown-trigger');
     let content = this.element.querySelector('.ember-basic-dropdown-content');
     assert.dom('.ember-basic-dropdown-trigger').hasAttribute('aria-owns', content.id, 'The trigger controls the content');
+  });
+
+  // Repositioning
+  test('Firing a reposition outside of a runloop doesn\'t break the component', async function (assert) {
+    //
+    //
+    //
+    // I don't think this test is working really
+    //
+    //
+    //
+    assert.expect(1);
+
+    await render(hbs`
+      <BasicDropdown as |dd|>
+        <dd.Trigger>Click me</dd.Trigger>
+        <dd.Content><div id="dropdown-is-opened"></div></dd.Content>
+      </BasicDropdown>
+    `);
+    await click('.ember-basic-dropdown-trigger');
+    document.querySelector('#dropdown-is-opened').innerHTML = '<span>New content that will trigger a reposition</span>';
+    return new Promise(resolve => {
+      setTimeout(() => {
+        assert.equal(deprecations.length, 0, 'No deprecation warning was raised');
+        resolve();
+      }, 100)
+    });
+  });
+
+  test('The `reposition` public action returns an object with the changes', async function (assert) {
+    assert.expect(4);
+    let remoteController;
+    this.saveAPI = (api) => remoteController = api;
+
+    await render(hbs`
+      <BasicDropdown @registerAPI={{action saveAPI}} as |dd|>
+        <dd.Trigger>Click me</dd.Trigger>
+        <dd.Content><div id="dropdown-is-opened"></div></dd.Content>
+      </BasicDropdown>
+    `);
+    await click('.ember-basic-dropdown-trigger');
+
+    let returnValue = run(() => remoteController.actions.reposition());
+    assert.ok(returnValue.hasOwnProperty('hPosition'));
+    assert.ok(returnValue.hasOwnProperty('vPosition'));
+    assert.ok(returnValue.hasOwnProperty('top'));
+    assert.ok(returnValue.hasOwnProperty('left'));
+  });
+
+  test('The user can pass a custom `calculatePosition` function to customize how the component is placed on the screen', async function (assert) {
+    this.calculatePosition = function(triggerElement, dropdownElement, destinationElement, { dropdown }) {
+      assert.ok(dropdown, 'dropdown should be passed to the component');
+      return {
+        horizontalPosition: 'right',
+        verticalPosition: 'above',
+        style: {
+          top: 111,
+          width: 100,
+          height: 110
+        }
+      };
+    };
+    await render(hbs`
+      <BasicDropdown @calculatePosition={{this.calculatePosition}} as |dd|>
+        <dd.Trigger>Click me</dd.Trigger>
+        <dd.Content><div id="dropdown-is-opened"></div></dd.Content>
+      </BasicDropdown>
+    `);
+    await click('.ember-basic-dropdown-trigger');
+    assert.dom('.ember-basic-dropdown-content').hasClass('ember-basic-dropdown-content--above', 'The dropdown is above');
+    assert.dom('.ember-basic-dropdown-content').hasClass('ember-basic-dropdown-content--right', 'The dropdown is in the right');
+    assert.dom('.ember-basic-dropdown-content').hasAttribute('style', 'top: 111px;width: 100px;height: 110px', 'The style attribute is the expected one');
+  });
+
+  test('The user can use the `renderInPlace` flag option to modify how the position is calculated in the `calculatePosition` function', async function(assert) {
+    assert.expect(4);
+    this.calculatePosition = function(triggerElement, dropdownElement, destinationElement, { dropdown, renderInPlace }) {
+      assert.ok(dropdown, 'dropdown should be passed to the component');
+      if (renderInPlace) {
+        return {
+          horizontalPosition: 'right',
+          verticalPosition: 'above',
+          style: {
+            top: 111,
+            right: 222
+          }
+        };
+      } else {
+        return {
+          horizontalPosition: 'left',
+          verticalPosition: 'bottom',
+          style: {
+            top: 333,
+            right: 444
+          }
+        };
+      }
+    };
+    await render(hbs`
+      <BasicDropdown @calculatePosition={{this.calculatePosition}} @renderInPlace=true as |dd|>
+        <dd.Trigger>Click me</dd.Trigger>
+        <dd.Content><div id="dropdown-is-opened"></div></dd.Content>
+      </BasicDropdown>
+    `);
+    await click('.ember-basic-dropdown-trigger');
+    assert.dom('.ember-basic-dropdown-content').hasClass('ember-basic-dropdown-content--above', 'The dropdown is above');
+    assert.dom('.ember-basic-dropdown-content').hasClass('ember-basic-dropdown-content--right', 'The dropdown is in the right');
+    assert.dom('.ember-basic-dropdown-content').hasAttribute('style', 'top: 111px;right: 222px', 'The style attribute is the expected one');
+  });
+
+  // Customization of inner components
+  test('It allows to customize the trigger passing `@triggerComponent="my-custom-trigger"`', async function (assert) {
+    this.owner.register('component:my-custom-trigger', class extends Component {});
+    this.owner.register("template:components/my-custom-trigger", hbs`<span id="my-custom-trigger">My custom trigger</span>`);
+    assert.expect(1);
+
+    await render(hbs`
+      <BasicDropdown @triggerComponent="my-custom-trigger" as |dd|>
+        <dd.Trigger>Press me</dd.Trigger>
+        <dd.Content><h3>Content of the dropdown</h3></dd.Content>
+      </BasicDropdown>
+    `);
+
+    assert.dom('#my-custom-trigger').exists('The custom component has been rendered');
+  });
+
+  test('It allows to customize the content passing `@contentComponent="my-custom-content"`', async function (assert) {
+    assert.expect(1);
+    this.owner.register('component:my-custom-content', class extends Component { });
+    this.owner.register("template:components/my-custom-content", hbs`<span id="my-custom-content">My custom content</span>`);
+    await render(hbs`
+      <BasicDropdown @contentComponent="my-custom-content" as |dd|>
+        <dd.Trigger>Press me</dd.Trigger>
+        <dd.Content><h3>Content of the dropdown</h3></dd.Content>
+      </BasicDropdown>
+    `);
+    await click('.ember-basic-dropdown-trigger');
+    assert.dom('#my-custom-content').exists('The custom component has been rendered');
   });
 });

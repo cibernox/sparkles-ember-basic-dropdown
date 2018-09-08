@@ -8,7 +8,7 @@ import calculatePosition from "../utils/calculate-position";
 const IGNORED_STYLE_ATTRS = ["top", "left", "right", "width", "height"];
 
 export default class BasicDropdown extends Component {
-  calculatePosition = calculatePosition;
+  calculatePosition = this.args.calculatePosition || calculatePosition;
   top = null;
   left = null;
   right = null;
