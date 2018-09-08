@@ -27,6 +27,7 @@ export default class BasicDropdown extends Component {
       reposition: this.reposition.bind(this)
     }
   };
+  contentId = `ember-basic-dropdown-content-${this.publicAPI.uniqueId}`;
   get destination() {
     if (this.args.destination !== undefined) {
       return this.args.destination;
@@ -96,7 +97,7 @@ export default class BasicDropdown extends Component {
     if (!this.publicAPI.isOpen) {
       return;
     }
-    let dropdownElement = document.getElementById(`ember-basic-dropdown-content-${this.publicAPI.uniqueId}`);
+    let dropdownElement = document.getElementById(this.contentId);
     let triggerElement = document.querySelector(`[data-ebd-id=${this.publicAPI.uniqueId}]`);
     if (!dropdownElement || !triggerElement) {
       return;

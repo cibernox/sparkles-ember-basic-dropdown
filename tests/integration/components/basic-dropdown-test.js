@@ -494,4 +494,18 @@ module('Integration | Component | basic-dropdown', function(hooks) {
     assert.dom(this.element.querySelector('.ember-basic-dropdown-content').parentNode).hasAttribute('id', 'id-of-elmnt', 'The content has been rendered in an alternative destination');
   });
 
+  // A11y
+  test('By default, the `aria-owns` attribute of the trigger contains the id of the content', async function (assert) {
+    assert.expect(1);
+
+    await render(hbs`
+      <BasicDropdown @renderInPlace=true as |dd|>
+        <dd.Trigger>Click me</dd.Trigger>
+        <dd.Content><div id="dropdown-is-opened"></div></dd.Content>
+      </BasicDropdown>
+    `);
+    await click('.ember-basic-dropdown-trigger');
+    let content = this.element.querySelector('.ember-basic-dropdown-content');
+    assert.dom('.ember-basic-dropdown-trigger').hasAttribute('aria-owns', content.id, 'The trigger controls the content');
+  });
 });
