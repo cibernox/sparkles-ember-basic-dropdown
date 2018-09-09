@@ -27,9 +27,9 @@ export default class BasicDropdownContentInner extends Component {
       );
     }
     if (this.args.onFocusOut) {
-      this.dropdownElement.addEventListener('focusout', e =>
+      this.dropdownElement.addEventListener('focusout', e => {
         this.args.onFocusOut(dropdown, e)
-      );
+      });
     }
     if (this.args.onMouseEnter) {
       this.dropdownElement.addEventListener('mouseenter', e =>

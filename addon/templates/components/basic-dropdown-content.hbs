@@ -8,7 +8,19 @@
       {{#if @overlay}}
         <div class="ember-basic-dropdown-overlay"></div>
       {{/if}}
-      <BasicDropdownContentInner @id={{@id}} @dropdown={{@dropdown}} @renderInPlace={{@renderInPlace}} @hPosition={{@hPosition}} @vPosition={{@vPosition}} ...attributes>
+      <BasicDropdownContentInner
+        @id={{@id}}
+        @dropdown={{@dropdown}}
+        @renderInPlace={{@renderInPlace}}
+        @hPosition={{@hPosition}}
+        @vPosition={{@vPosition}}
+        @onFocusIn={{@onFocusIn}}
+        @onFocusOut={{@onFocusOut}}
+        @onMouseEnter={{@onMouseEnter}}
+        @onMouseLeave={{@onMouseLeave}}
+        @onKeyDown={{@onKeyDown}}
+        ...attributes
+      >
         {{yield}}
       </BasicDropdownContentInner>
       {{!-- {{#basic-dropdown/content-element

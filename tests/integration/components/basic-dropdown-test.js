@@ -1,6 +1,6 @@
 import { module, test, skip } from 'qunit';
 import { setupRenderingTest } from 'ember-qunit';
-import { render, click, triggerEvent } from '@ember/test-helpers';
+import { render, click, triggerEvent, focus } from '@ember/test-helpers';
 import hbs from 'htmlbars-inline-precompile';
 import { schedule } from '@ember/runloop';
 import { registerDeprecationHandler } from '@ember/debug';
@@ -793,5 +793,68 @@ module('Integration | Component | basic-dropdown', function(hooks) {
     assert.dom('.body-grandchild').doesNotExist('grandchild dropdown should not exist becuase we clicked in parent');
     assert.dom('.body-child').doesNotExist('child dropdown should not exist becuase we clicked in parent');
     assert.dom('.body-parent').exists('can click in parent dropdown and still be open');
+  });
+
+  // Misc bugfixes
+  test('[BUGFIX] Dropdowns rendered in place do not register events twice', async function (assert) {
+    assert.expect(2);
+    let called = false;
+    this.onFocusOut = function () {
+      assert.notOk(called);
+      called = true;
+    }
+    this.onOpen = function () {
+      assert.ok(true);
+    }
+    await render(hbs`
+      <input type="text" id="outer-input">
+      <BasicDropdown @renderInPlace=true @onOpen={{this.onOpen}} as |dd|>
+        <dd.Trigger>Open me</dd.Trigger>
+        <dd.Content @onFocusOut={{this.onFocusOut}}><input type="text" id="inner-input"></dd.Content>
+      </BasicDropdown>
+    `);
+    await click('.ember-basic-dropdown-trigger');
+    await focus('#inner-input');
+    await focus('#outer-input');
+  });
+
+  test('[BUGFIX] It protects the inline styles from undefined values returned in the `calculatePosition` callback', async function (assert) {
+    assert.expect(1);
+    this.calculatePosition = function () {
+      return {
+        style: {
+        }
+      };
+    };
+    await render(hbs`
+      <BasicDropdown @calculatePosition={{this.calculatePosition}} as |dd|>
+        <dd.Trigger>Open me</dd.Trigger>
+        <dd.Content>Some content</dd.Content>
+      </BasicDropdown>
+    `);
+    await click('.ember-basic-dropdown-trigger');
+    let content = document.querySelector('.ember-basic-dropdown-content');
+    assert.equal(content.getAttribute('style').indexOf('undefined'), -1, 'There is no undefined values')
+
+  });
+
+  test('It includes the inline styles returned from the `calculatePosition` callback', async function (assert) {
+    assert.expect(1);
+    this.calculatePosition = function () {
+      return {
+        style: {
+          'max-height': '500px',
+          'overflow-y': 'auto'
+        }
+      };
+    };
+    await render(hbs`
+      <BasicDropdown @calculatePosition={{this.calculatePosition}} as |dd|>
+        <dd.Trigger>Open me</dd.Trigger>
+        <dd.Content>Some content</dd.Content>
+      </BasicDropdown>
+    `);
+    await click('.ember-basic-dropdown-trigger');
+    assert.dom('.ember-basic-dropdown-content').hasAttribute('style', /max-height: 500px;overflow-y: auto/)
   });
 });
