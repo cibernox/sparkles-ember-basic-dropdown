@@ -8,13 +8,9 @@
       {{#if @overlay}}
         <div class="ember-basic-dropdown-overlay"></div>
       {{/if}}
-      <div
-        id={{@id}}
-        class="ember-basic-dropdown-content{{if @renderInPlace " ember-basic-dropdown-content--in-place"}}{{if @hPosition (concat " ember-basic-dropdown-content--" @hPosition)}}{{if @vPosition (concat " ember-basic-dropdown-content--" @vPosition)}}"
-        ...attributes
-      >
+      <BasicDropdownContentInner @id={{@id}} @dropdown={{@dropdown}} @renderInPlace={{@renderInPlace}} @hPosition={{@hPosition}} @vPosition={{@vPosition}} ...attributes>
         {{yield}}
-      </div>
+      </BasicDropdownContentInner>
       {{!-- {{#basic-dropdown/content-element
         tagName=_contentTagName
         id=dropdownId

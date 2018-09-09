@@ -1,6 +1,5 @@
 import Component, { tracked } from "sparkles-component";
 import { guidFor } from "@ember/object/internals";
-import { scheduleOnce } from "@ember/runloop";
 import { getOwner } from "@ember/application";
 import { DEBUG } from "@glimmer/env";
 import calculatePosition from "../utils/calculate-position";
@@ -17,7 +16,6 @@ export default class BasicDropdown extends Component {
   @tracked hPosition = null;
   @tracked vPosition = null;
   @tracked publicAPI = {};
-  contentId = `ember-basic-dropdown-content-${this.publicAPI.uniqueId}`;
   get destination() {
     if (this.args.destination !== undefined) {
       return this.args.destination;
@@ -45,6 +43,7 @@ export default class BasicDropdown extends Component {
         reposition: this.reposition.bind(this)
       }
     });
+    this.contentId = `ember-basic-dropdown-content-${this.publicAPI.uniqueId}`;
   }
 
   didUpdate() {
@@ -65,7 +64,6 @@ export default class BasicDropdown extends Component {
       return;
     }
     this._updateState({ isOpen: true });
-    scheduleOnce('afterRender', this.publicAPI.actions.reposition);
   }
 
   close(e) {
