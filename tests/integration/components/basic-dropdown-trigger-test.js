@@ -46,6 +46,17 @@ module('Integration | Component | basic-dropdown-trigger', function (hooks) {
     assert.dom('.ember-basic-dropdown-trigger').hasAttribute('tabindex', '3', 'Has a tabindex of 3');
   });
 
+  test("If it receives `tabindex={{null}}`, the trigger doesn't have a tabindex attribute", async function(assert) {
+    assert.expect(1);
+    await render(hbs`
+      <BasicDropdown as |dd|>
+        <dd.Trigger tabindex={{null}}>Click me</dd.Trigger>
+      </BasicDropdown>
+    `);
+
+    assert.dom(".ember-basic-dropdown-trigger").doesNotHaveAttribute("tabindex");
+  });
+
   test('If it receives `title=something`, if has that title attribute', async function (assert) {
     assert.expect(1);
     await render(hbs`
