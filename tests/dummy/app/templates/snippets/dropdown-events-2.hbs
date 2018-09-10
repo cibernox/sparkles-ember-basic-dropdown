@@ -1,0 +1,15 @@
+<BasicDropdown @onOpen={{action "waitForUsers"}} as |dd|>
+  <dd.Trigger class="trigger-bootstrap-feel">
+    {{#if loadUsersAndOpen.isRunning}}
+      Loading...
+    {{else}}
+      Click me
+    {{/if}}
+  </dd.Trigger>
+
+  <dd.Content class="content-bootstrap-feel width-300">
+    {{#each loadUsersAndOpen.lastSuccessful.value as |user|}}
+      <p>{{user.name}} - {{user.assignment}}</p>
+    {{/each}}
+  </dd.Content>
+</BasicDropdown>

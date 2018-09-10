@@ -1,0 +1,17 @@
+<BasicDropdown @onClose={{action "preventUntilSelected"}} as |dd|>
+  <dd.Trigger class="trigger-bootstrap-feel">Click me</dd.Trigger>
+
+  <dd.Content class="content-bootstrap-feel width-300">
+    <p>
+      Who you love more?
+    </p>
+    <p>
+      <input type="radio" id="question-1" name="question" value="mam" onchange={{action (mut selected) "dad"}}>
+      <label for="question-1">Dad</label>
+    </p>
+    <p>
+      <input type="radio" id="question-2" name="question" value="dad" onchange={{action (mut selected) "mam"}}>
+      <label for="question-2">Mom</label>
+    </p>
+  </dd.Content>
+</BasicDropdown>

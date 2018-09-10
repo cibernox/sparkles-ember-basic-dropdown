@@ -32,7 +32,6 @@ export default class BasicDropdown extends Component {
   constructor(args) {
     super(args);
     this._previousArgs = args;
-    debugger;
     this._updateState({
       uniqueId: guidFor(this),
       isOpen: this.args.initiallyOpened || false,

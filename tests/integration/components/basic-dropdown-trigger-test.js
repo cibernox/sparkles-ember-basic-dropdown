@@ -1,7 +1,7 @@
 import { module, test } from 'qunit';
 import { setupRenderingTest } from 'ember-qunit';
 import hbs from 'htmlbars-inline-precompile';
-import { render, click } from "@ember/test-helpers";
+import { render, click, focus } from "@ember/test-helpers";
 // import { tapTrigger, nativeTap } from 'ember-basic-dropdown/test-support/helpers';
 // import { render, triggerEvent, triggerKeyEvent, focus } from '@ember/test-helpers';
 // import { run } from '@ember/runloop';
@@ -232,18 +232,19 @@ module('Integration | Component | basic-dropdown-trigger', function (hooks) {
   //   triggerEvent('.ember-basic-dropdown-trigger', 'mouseleave');
   // });
 
-  // test('If it receives an `onFocus` action, it will be invoked when it get focused', async function (assert) {
-  //   assert.expect(2);
-  //   this.onFocus = (dropdown, e) => {
-  //     assert.equal(dropdown, this.dropdown, 'receives the dropdown as 1st argument');
-  //     assert.ok(e instanceof window.Event, 'It receives the event as second argument');
-  //   };
-  //   this.dropdown = { uniqueId: 123 };
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown onFocus=onFocus}}Click me{{/basic-dropdown/trigger}}
-  //   `);
-  //   await focus('.ember-basic-dropdown-trigger');
-  // });
+  test('If it receives an `onFocus` action, it will be invoked when it get focused', async function (assert) {
+    assert.expect(2);
+    this.onFocus = (dropdown, e) => {
+      assert.ok(dropdown.hasOwnProperty('uniqueId'), 'receives the dropdown as 1st argument');
+      assert.ok(e instanceof window.Event, 'It receives the event as second argument');
+    };
+    await render(hbs`
+      <BasicDropdown as |dd|>
+        <dd.Trigger @onFocus={{this.onFocus}}>Click me</dd.Trigger>
+      </BasicDropdown>
+    `);
+    await focus('.ember-basic-dropdown-trigger');
+  });
 
   // test('If it receives an `onBlur` action, it will be invoked when it get blurred', async function (assert) {
   //   assert.expect(2);
