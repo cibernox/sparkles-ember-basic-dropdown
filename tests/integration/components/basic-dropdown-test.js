@@ -522,13 +522,6 @@ module('Integration | Component | basic-dropdown', function(hooks) {
 
   // Repositioning
   test('Firing a reposition outside of a runloop doesn\'t break the component', async function (assert) {
-    //
-    //
-    //
-    // I don't think this test is working really
-    //
-    //
-    //
     assert.expect(1);
 
     await render(hbs`
