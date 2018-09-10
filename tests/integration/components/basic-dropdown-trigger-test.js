@@ -83,7 +83,7 @@ module('Integration | Component | basic-dropdown-trigger', function (hooks) {
   test('If the dropdown is disabled, the trigger doesn\'t have tabindex attribute', async function (assert) {
     assert.expect(1);
     await render(hbs`
-      <BasicDropdown @disabled=true as |dd|>
+      <BasicDropdown @disabled={{true}} as |dd|>
         <dd.Trigger>Click me</dd.Trigger>
       </BasicDropdown>
     `);
