@@ -6,6 +6,7 @@
   disabled={{@dropdown.disabled}}
   tabindex={{unless @dropdown.disabled "0"}}
   aria-expanded={{if @dropdown.isOpen "true"}}
+  role="button"
   ...attributes
 >
   {{yield}}

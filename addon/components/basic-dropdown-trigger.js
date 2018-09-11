@@ -34,9 +34,7 @@ export default class BasicDropdownTrigger extends Component {
     //     this.send("handleClick", e);
     //   }
     // });
-    // this.element.addEventListener("keydown", e =>
-    //   this.send("handleKeyDown", e)
-    // );
+    this.triggerEl.addEventListener('keydown', e => this._handleKeyDown(e));
   }
 
   _addOptionalHandlers() {
@@ -84,6 +82,23 @@ export default class BasicDropdownTrigger extends Component {
       //   return;
       // }
       this.args.dropdown.actions.toggle(e);
+    }
+  }
+
+  _handleKeyDown(e) {
+    if (this.args.dropdown.disabled) {
+      return;
+    }
+    if (this.args.onKeyDown && this.args.onKeyDown(this.args.dropdown, e) === false) {
+      return;
+    }
+    if (e.keyCode === 13) {  // Enter
+      this.args.dropdown.actions.toggle(e);
+    } else if (e.keyCode === 32) { // Space
+      e.preventDefault(); // prevents the space to trigger a scroll page-next
+      this.args.dropdown.actions.toggle(e);
+    } else if (e.keyCode === 27) {
+      this.args.dropdown.actions.close(e);
     }
   }
 }

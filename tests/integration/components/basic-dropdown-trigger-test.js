@@ -1,7 +1,7 @@
 import { module, test } from 'qunit';
 import { setupRenderingTest } from 'ember-qunit';
 import hbs from 'htmlbars-inline-precompile';
-import { render, click, focus } from "@ember/test-helpers";
+import { render, click, focus, blur, triggerEvent, triggerKeyEvent } from '@ember/test-helpers';
 // import { tapTrigger, nativeTap } from 'ember-basic-dropdown/test-support/helpers';
 // import { render, triggerEvent, triggerKeyEvent, focus } from '@ember/test-helpers';
 // import { run } from '@ember/runloop';
@@ -115,7 +115,6 @@ module('Integration | Component | basic-dropdown-trigger', function (hooks) {
 
   test('If the received dropdown is open, it has an `aria-expanded="true"` attribute', async function (assert) {
     assert.expect(2);
-    this.dropdown = { uniqueId: 123, isOpen: false };
     await render(hbs`
       <BasicDropdown as |dd|>
         <dd.Trigger>Click me</dd.Trigger>
@@ -126,111 +125,67 @@ module('Integration | Component | basic-dropdown-trigger', function (hooks) {
     assert.dom('.ember-basic-dropdown-trigger').hasAttribute('aria-expanded', 'true', 'the aria-expanded is true');
   });
 
-  // test('The `ariaPressed` attribute is bound, but defaults to false', async function (assert) {
-  //   assert.expect(3);
-  //   this.dropdown = { uniqueId: 123, isOpen: false };
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown}}Click me{{/basic-dropdown/trigger}}
-  //   `);
-  //   assert.dom('.ember-basic-dropdown-trigger').doesNotHaveAttribute('aria-pressed');
-  //   run(() => set(this.dropdown, 'isOpen', true));
-  //   assert.dom('.ember-basic-dropdown-trigger').doesNotHaveAttribute('aria-pressed');
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown ariaPressed=true}}Click me{{/basic-dropdown/trigger}}
-  //   `);
-  //   assert.dom('.ember-basic-dropdown-trigger').hasAttribute('aria-pressed', 'true', 'the aria-pressed is true');
-  // });
+  test('If it has an `aria-owns` attribute pointing to the id of the content', async function (assert) {
+    assert.expect(1);
+    await render(hbs`
+      <BasicDropdown @initiallyOpened={{true}} as |dd|>
+        <dd.Trigger>Click me</dd.Trigger>
+        <dd.Content>Content</dd.Content>
+      </BasicDropdown>
+    `);
+    let contentId = document.querySelector('.ember-basic-dropdown-content').id;
+    assert.dom('.ember-basic-dropdown-trigger').hasAttribute('aria-owns', contentId);
+  });
 
-  // test('If it has an `aria-owns="foo123"` attribute pointing to the id of the content', async function (assert) {
-  //   assert.expect(1);
-  //   this.dropdown = { uniqueId: 123 };
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown}}Click me{{/basic-dropdown/trigger}}
-  //   `);
-  //   assert.dom('.ember-basic-dropdown-trigger').hasAttribute('aria-owns', 'ember-basic-dropdown-content-123');
-  // });
+  test('If it does not receive an specific `role`, the default is `button`', async function (assert) {
+    assert.expect(1);
+    await render(hbs`
+      <BasicDropdown as |dd|>
+        <dd.Trigger>Click me</dd.Trigger>
+      </BasicDropdown>
+    `);
+    assert.dom('.ember-basic-dropdown-trigger').hasAttribute('role', 'button');
+  });
 
-  // test('If it receives `role="foo123"` it gets that attribute', async function (assert) {
-  //   assert.expect(1);
-  //   this.dropdown = { uniqueId: 123 };
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown role="foo123"}}Click me{{/basic-dropdown/trigger}}
-  //   `);
-  //   assert.dom('.ember-basic-dropdown-trigger').hasAttribute('role', 'foo123');
-  // });
+  test('The `aria-haspopup` attribute is not present by default', async function (assert) {
+    assert.expect(1);
+    await render(hbs`
+      <BasicDropdown as |dd|>
+        <dd.Trigger>Click me</dd.Trigger>
+      </BasicDropdown>
+    `);
+    assert.dom('.ember-basic-dropdown-trigger').doesNotHaveAttribute('aria-haspopup');
+  });
 
-  // test('If it does not receive an specific `role`, the default is `button`', async function (assert) {
-  //   assert.expect(1);
-  //   this.dropdown = { uniqueId: 123 };
-  //   this.role = undefined;
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown role=role}}Click me{{/basic-dropdown/trigger}}
-  //   `);
-  //   assert.dom('.ember-basic-dropdown-trigger').hasAttribute('role', 'button');
-  // });
+  // Custom actions
+  test('If it receives an `onMouseEnter` action, it will be invoked when a mouseenter event is received', async function (assert) {
+    assert.expect(2);
+    this.onMouseEnter = (dropdown, e) => {
+      assert.ok(dropdown.hasOwnProperty('uniqueId'), 'receives the dropdown as 1st argument');
+      assert.ok(e instanceof window.Event, 'It receives the event as second argument');
+    };
+    await render(hbs`
+      <BasicDropdown as |dd|>
+        <dd.Trigger @onMouseEnter={{this.onMouseEnter}}>Click me</dd.Trigger>
+      </BasicDropdown>
+    `);
+    await triggerEvent('.ember-basic-dropdown-trigger', 'mouseenter');
+  });
 
-  // test('The `aria-haspopup` attribute is not present by default', async function (assert) {
-  //   assert.expect(1);
-  //   this.dropdown = { uniqueId: 123 };
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown}}Click me{{/basic-dropdown/trigger}}
-  //   `);
-  //   assert.dom('.ember-basic-dropdown-trigger').doesNotHaveAttribute('aria-haspopup');
-  // });
-
-  // test('The `aria-haspopup` attribute will be present if passed in', async function (assert) {
-  //   assert.expect(1);
-  //   this.dropdown = { uniqueId: 123 };
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown aria-haspopup=true}}Click me{{/basic-dropdown/trigger}}
-  //   `);
-  //   assert.dom('.ember-basic-dropdown-trigger').hasAttribute('aria-haspopup');
-  // });
-
-  // test('The `aria-autocomplete` will be present if passed in', async function (assert) {
-  //   assert.expect(1);
-  //   this.dropdown = { uniqueId: 123 };
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown aria-autocomplete="foobar"}}Click me{{/basic-dropdown/trigger}}
-  //   `);
-  //   assert.dom('.ember-basic-dropdown-trigger').hasAttribute('aria-autocomplete', 'foobar', 'Has `aria-autocomplete="foobar"`');
-  // });
-
-  // test('The `aria-activedescendant` will be present if passed in', async function (assert) {
-  //   assert.expect(1);
-  //   this.dropdown = { uniqueId: 123 };
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown aria-activedescendant="foobar"}}Click me{{/basic-dropdown/trigger}}
-  //   `);
-  //   assert.dom('.ember-basic-dropdown-trigger').hasAttribute('aria-activedescendant', 'foobar', 'Has `aria-activedescendant="foobar"`');
-  // });
-
-  // // Custom actions
-  // test('If it receives an `onMouseEnter` action, it will be invoked when a mouseenter event is received', async function (assert) {
-  //   assert.expect(2);
-  //   this.dropdown = { uniqueId: 123 };
-  //   this.onMouseEnter = (dropdown, e) => {
-  //     assert.equal(dropdown, this.dropdown, 'receives the dropdown as 1st argument');
-  //     assert.ok(e instanceof window.Event, 'It receives the event as second argument');
-  //   };
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown onMouseEnter=onMouseEnter}}Click me{{/basic-dropdown/trigger}}
-  //   `);
-  //   triggerEvent('.ember-basic-dropdown-trigger', 'mouseenter');
-  // });
-
-  // test('If it receives an `onMouseLeave` action, it will be invoked when a mouseleave event is received', async function (assert) {
-  //   assert.expect(2);
-  //   this.onMouseLeave = (dropdown, e) => {
-  //     assert.equal(dropdown, this.dropdown, 'receives the dropdown as 1st argument');
-  //     assert.ok(e instanceof window.Event, 'It receives the event as second argument');
-  //   };
-  //   this.dropdown = { uniqueId: 123 };
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown onMouseLeave=onMouseLeave}}Click me{{/basic-dropdown/trigger}}
-  //   `);
-  //   triggerEvent('.ember-basic-dropdown-trigger', 'mouseleave');
-  // });
+  test('If it receives an `onMouseLeave` action, it will be invoked when a mouseleave event is received', async function (assert) {
+    assert.expect(2);
+    this.onMouseLeave = (dropdown, e) => {
+      assert.ok(dropdown.hasOwnProperty("uniqueId"), "receives the dropdown as 1st argument");
+      assert.ok(e instanceof window.Event, 'It receives the event as second argument');
+    };
+    this.dropdown = { uniqueId: 123 };
+    await render(hbs`
+      <BasicDropdown as |dd|>
+        <dd.Trigger @onMouseLeave={{this.onMouseLeave}}>Click me</dd.Trigger>
+      </BasicDropdown>
+    `);
+    await triggerEvent('.ember-basic-dropdown-trigger', 'mouseleave');
+  });
 
   test('If it receives an `onFocus` action, it will be invoked when it get focused', async function (assert) {
     assert.expect(2);
@@ -246,47 +201,53 @@ module('Integration | Component | basic-dropdown-trigger', function (hooks) {
     await focus('.ember-basic-dropdown-trigger');
   });
 
-  // test('If it receives an `onBlur` action, it will be invoked when it get blurred', async function (assert) {
-  //   assert.expect(2);
-  //   this.onBlur = (dropdown, e) => {
-  //     assert.equal(dropdown, this.dropdown, 'receives the dropdown as 1st argument');
-  //     assert.ok(e instanceof window.Event, 'It receives the event as second argument');
-  //   };
-  //   this.dropdown = { uniqueId: 123 };
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown onBlur=onBlur}}Click me{{/basic-dropdown/trigger}}
-  //   `);
-  //   await focus('.ember-basic-dropdown-trigger');
-  //   await blur('.ember-basic-dropdown-trigger');
-  // });
+  test('If it receives an `onBlur` action, it will be invoked when it get blurred', async function (assert) {
+    assert.expect(2);
+    this.onBlur = (dropdown, e) => {
+      assert.ok(dropdown.hasOwnProperty('uniqueId'), 'receives the dropdown as 1st argument');
+      assert.ok(e instanceof window.Event, 'It receives the event as second argument');
+    };
+    this.dropdown = { uniqueId: 123 };
+    await render(hbs`
+      <BasicDropdown as |dd|>
+        <dd.Trigger @onBlur={{this.onBlur}}>Click me</dd.Trigger>
+      </BasicDropdown>
+    `);
+    await focus('.ember-basic-dropdown-trigger');
+    await blur('.ember-basic-dropdown-trigger');
+  });
 
-  // test('If it receives an `onKeyDown` action, it will be invoked when a key is pressed while the component is focused', async function (assert) {
-  //   assert.expect(3);
-  //   this.onKeyDown = (dropdown, e) => {
-  //     assert.equal(dropdown, this.dropdown, 'receives the dropdown as 1st argument');
-  //     assert.ok(e instanceof window.Event, 'It receives the event as second argument');
-  //     assert.equal(e.keyCode, 70, 'the event is the keydown event');
-  //   };
-  //   this.dropdown = { uniqueId: 123 };
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown onKeyDown=onKeyDown}}Click me{{/basic-dropdown/trigger}}
-  //   `);
-  //   triggerKeyEvent('.ember-basic-dropdown-trigger', 'keydown', 70);
-  // });
+  test('If it receives an `onKeyDown` action, it will be invoked when a key is pressed while the component is focused', async function (assert) {
+    assert.expect(3);
+    this.onKeyDown = (dropdown, e) => {
+      assert.ok(dropdown.hasOwnProperty('uniqueId'), "receives the dropdown as 1st argument");
+      assert.ok(e instanceof window.Event, 'It receives the event as second argument');
+      assert.equal(e.keyCode, 70, 'the event is the keydown event');
+    };
+    this.dropdown = { uniqueId: 123 };
+    await render(hbs`
+      <BasicDropdown as |dd|>
+        <dd.Trigger @onKeyDown={{this.onKeyDown}}>Click me</dd.Trigger>
+      </BasicDropdown>
+    `);
+    await triggerKeyEvent('.ember-basic-dropdown-trigger', 'keydown', 70);
+  });
 
-  // test('If it receives an `onKeyUp` action, it will be invoked when a key is pressed while the component is focused', async function (assert) {
-  //   assert.expect(3);
-  //   this.onKeyUp = (dropdown, e) => {
-  //     assert.equal(dropdown, this.dropdown, 'receives the dropdown as 1st argument');
-  //     assert.ok(e instanceof window.Event, 'It receives the event as second argument');
-  //     assert.equal(e.keyCode, 70, 'the event is the keydown event');
-  //   };
-  //   this.dropdown = { uniqueId: 123 };
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown onKeyUp=onKeyUp}}Click me{{/basic-dropdown/trigger}}
-  //   `);
-  //   triggerKeyEvent('.ember-basic-dropdown-trigger', 'keyup', 70);
-  // });
+  test('If it receives an `onKeyUp` action, it will be invoked when a key is pressed while the component is focused', async function (assert) {
+    assert.expect(3);
+    this.onKeyUp = (dropdown, e) => {
+      assert.ok(dropdown.hasOwnProperty('uniqueId'), "receives the dropdown as 1st argument");
+      assert.ok(e instanceof window.Event, 'It receives the event as second argument');
+      assert.equal(e.keyCode, 70, 'the event is the keydown event');
+    };
+    this.dropdown = { uniqueId: 123 };
+    await render(hbs`
+      <BasicDropdown as |dd|>
+        <dd.Trigger @onKeyUp={{this.onKeyUp}}>Click me</dd.Trigger>
+      </BasicDropdown>
+    `);
+    await triggerKeyEvent('.ember-basic-dropdown-trigger', 'keyup', 70);
+  });
 
   // // Default behaviour
   // test('mousedown events invoke the `toggle` action on the dropdown by default', async function (assert) {
