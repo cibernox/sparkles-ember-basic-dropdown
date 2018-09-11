@@ -7,6 +7,7 @@ const IS_TOUCH_DEVICE = Boolean(!!window && 'ontouchstart' in window);
 
 export default class BasicDropdownContentInner extends Component {
   _handleRootMouseDown = this._handleRootMouseDown.bind(this);
+  _runloopAwareReposition = this._runloopAwareReposition.bind(this);
   get animationEnabled() {
     let config = getOwner(this).resolveRegistration('config:environment');
     return config.environment !== 'test';
