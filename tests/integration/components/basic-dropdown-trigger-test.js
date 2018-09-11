@@ -249,55 +249,54 @@ module('Integration | Component | basic-dropdown-trigger', function (hooks) {
     await triggerKeyEvent('.ember-basic-dropdown-trigger', 'keyup', 70);
   });
 
-  // // Default behaviour
-  // test('mousedown events invoke the `toggle` action on the dropdown by default', async function (assert) {
-  //   assert.expect(2);
-  //   this.dropdown = {
-  //     uniqueId: 123,
-  //     actions: {
-  //       toggle(e) {
-  //         assert.ok(true, 'The `toggle()` action has been fired');
-  //         assert.ok(e instanceof window.Event && arguments.length === 1, 'It receives the event as first and only argument');
-  //       }
-  //     }
-  //   };
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown}}Click me{{/basic-dropdown/trigger}}
-  //   `);
-  //   triggerEvent('.ember-basic-dropdown-trigger', 'mousedown');
-  // });
+  // Default behaviour
+  test('mousedown DO NOT toggle the dropdown by default', async function (assert) {
+    assert.expect(1);
+    await render(hbs`
+      <BasicDropdown as |dd|>
+        <dd.Trigger>Click me</dd.Trigger>
+        <dd.Content>Content</dd.Content>
+      </BasicDropdown>
+    `);
+    await triggerEvent('.ember-basic-dropdown-trigger', 'mousedown');
+    assert.dom(".ember-basic-dropdown-content").doesNotExist('The dropdown is closed');
+  });
 
-  // test('click events DO NOT invoke the `toggle` action on the dropdown by default', async function (assert) {
-  //   assert.expect(0);
-  //   this.dropdown = {
-  //     uniqueId: 123,
-  //     actions: {
-  //       toggle() {
-  //         assert.ok(false);
-  //       }
-  //     }
-  //   };
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown}}Click me{{/basic-dropdown/trigger}}
-  //   `);
-  //   triggerEvent('.ember-basic-dropdown-trigger', 'click');
-  // });
+  test('click events toggle the dropdown by default', async function (assert) {
+    assert.expect(1);
+    await render(hbs`
+      <BasicDropdown as |dd|>
+        <dd.Trigger>Click me</dd.Trigger>
+        <dd.Content>Content</dd.Content>
+      </BasicDropdown>
+    `);
+    await triggerEvent('.ember-basic-dropdown-trigger', 'click');
+    assert.dom(".ember-basic-dropdown-content").exists('The dropdown is open');
+  });
 
-  // test('mousedown events DO NOT invoke the `toggle` action on the dropdown if `eventType="click"`', async function (assert) {
-  //   assert.expect(0);
-  //   this.dropdown = {
-  //     uniqueId: 123,
-  //     actions: {
-  //       toggle() {
-  //         assert.ok(false);
-  //       }
-  //     }
-  //   };
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown eventType="click"}}Click me{{/basic-dropdown/trigger}}
-  //   `);
-  //   triggerEvent('.ember-basic-dropdown-trigger', 'mousedown');
-  // });
+  test('click events DO NOT toggle the dropdown if `@eventType="mousedown"` is passed', async function (assert) {
+    assert.expect(1);
+    await render(hbs`
+      <BasicDropdown as |dd|>
+        <dd.Trigger @eventType="mousedown">Click me</dd.Trigger>
+        <dd.Content>Content</dd.Content>
+      </BasicDropdown>
+    `);
+    await triggerEvent('.ember-basic-dropdown-trigger', 'click');
+    assert.dom(".ember-basic-dropdown-content").doesNotExist('The dropdown is closed');
+  });
+
+  test('mousedown events toggle the dropdown if `@eventType="mousedown"` is passed', async function(assert) {
+    assert.expect(1);
+    await render(hbs`
+      <BasicDropdown as |dd|>
+        <dd.Trigger @eventType="mousedown">Click me</dd.Trigger>
+        <dd.Content>Content</dd.Content>
+      </BasicDropdown>
+    `);
+    await triggerEvent('.ember-basic-dropdown-trigger', 'mousedown');
+    assert.dom('.ember-basic-dropdown-content').exists();
+  });
 
   // test('click events invoke the `toggle` action on the dropdown if `eventType="click"', async function (assert) {
   //   assert.expect(2);
