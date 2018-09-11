@@ -397,7 +397,7 @@ module('Integration | Component | basic-dropdown-trigger', function (hooks) {
     assert.expect(2);
     await render(hbs`
       <BasicDropdown as |dd|>
-        <dd.Trigger @onKeyDown={{this.onKeyDown}}>Click me</dd.Trigger>
+        <dd.Trigger>Click me</dd.Trigger>
         <dd.Content>Content</dd.Content>
       </BasicDropdown>
     `);
@@ -407,24 +407,22 @@ module('Integration | Component | basic-dropdown-trigger', function (hooks) {
     assert.dom('.ember-basic-dropdown-content').doesNotExist();
   });
 
-  // test('Firing a mousemove between a touchstart and a touchend (touch scroll) doesn\'t fire the toggle action', async function (assert) {
-  //   assert.expect(0);
-  //   this.dropdown = {
-  //     uniqueId: 123,
-  //     actions: {
-  //       toggle() {
-  //         assert.ok(false, 'This action in not called');
-  //       }
-  //     }
-  //   };
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown isTouchDevice=true}}Click me{{/basic-dropdown/trigger}}
-  //   `);
+  test('Firing a mousemove between a touchstart and a touchend (touch scroll) doesn\'t fire the toggle action', async function(assert) {
+    assert.expect(0);
+    this.watchOpen = function() {
+      assert.ok(false, 'The component must not be opened');
+    };
+    await render(hbs`
+      <BasicDropdown @onOpen={{this.watchOpen}} as |dd|>
+        <dd.Trigger @isTouchDevice={{true}}>Click me</dd.Trigger>
+        <dd.Content>Content</dd.Content>
+      </BasicDropdown>
+    `);
 
-  //   triggerEvent('.ember-basic-dropdown-trigger', 'touchstart');
-  //   triggerEvent('.ember-basic-dropdown-trigger', 'touchmove');
-  //   triggerEvent('.ember-basic-dropdown-trigger', 'touchend');
-  // });
+    await triggerEvent('.ember-basic-dropdown-trigger', 'touchstart');
+    await triggerEvent('.ember-basic-dropdown-trigger', 'touchmove');
+    await triggerEvent('.ember-basic-dropdown-trigger', 'touchend');
+  });
 
   // test('If its dropdown is disabled it won\'t respond to mouse, touch or keyboard event', async function (assert) {
   //   assert.expect(0);

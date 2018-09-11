@@ -4,6 +4,7 @@ const IS_TOUCH_DEVICE = Boolean(!!window && "ontouchstart" in window);
 export default class BasicDropdownTrigger extends Component {
   _handleMouseDown = this._handleMouseDown.bind(this);
   _touchMoveHandler = this._touchMoveHandler.bind(this);
+  _isTouchDevice = Object.hasOwnProperty.call(this.args, 'isTouchDevice') ? this.args.isTouchDevice : IS_TOUCH_DEVICE;
 
   @tracked('args.eventType')
   get eventType() {
@@ -18,7 +19,7 @@ export default class BasicDropdownTrigger extends Component {
 
   _addMandatoryHandlers() {
     // this.triggerEl.addEventListener("mousedown", this._handleMouseDown);
-    if (IS_TOUCH_DEVICE) {
+    if (this._isTouchDevice) {
       // If the component opens on click there is no need of any of this, as the device will
       // take care tell apart faux clicks from scrolls.
       this.triggerEl.addEventListener("touchstart", () => {
@@ -120,15 +121,14 @@ export default class BasicDropdownTrigger extends Component {
 
   _handleTouchEnd(e) {
     this.toggleIsBeingHandledByTouchEvents = true;
-    let dropdown = this.get('dropdown');
+    let { dropdown } = this.args;
     if (e && e.defaultPrevented || dropdown.disabled) {
       return;
     }
     if (!this.hasMoved) {
       // execute user-supplied onTouchEnd function before default toggle action;
       // short-circuit default behavior if user-supplied function returns `false`
-      let onTouchEnd = this.get('onTouchEnd');
-      if (onTouchEnd && onTouchEnd(dropdown, e) === false) {
+      if (this.args.onTouchEnd && this.args.onTouchEnd(dropdown, e) === false) {
         return;
       }
       dropdown.actions.toggle(e);
