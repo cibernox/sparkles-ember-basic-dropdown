@@ -1,7 +1,7 @@
 import { module, test } from 'qunit';
 import { setupRenderingTest } from 'ember-qunit';
 import hbs from 'htmlbars-inline-precompile';
-import { render, click, focus, blur, triggerEvent, triggerKeyEvent } from '@ember/test-helpers';
+import { render, click, focus, blur, triggerEvent, triggerKeyEvent, tap } from '@ember/test-helpers';
 // import { tapTrigger, nativeTap } from 'ember-basic-dropdown/test-support/helpers';
 // import { render, triggerEvent, triggerKeyEvent, focus } from '@ember/test-helpers';
 // import { run } from '@ember/runloop';
@@ -298,160 +298,114 @@ module('Integration | Component | basic-dropdown-trigger', function (hooks) {
     assert.dom('.ember-basic-dropdown-content').exists();
   });
 
-  // test('click events invoke the `toggle` action on the dropdown if `eventType="click"', async function (assert) {
-  //   assert.expect(2);
-  //   this.dropdown = {
-  //     uniqueId: 123,
-  //     actions: {
-  //       toggle(e) {
-  //         assert.ok(true, 'The `toggle()` action has been fired');
-  //         assert.ok(e instanceof window.Event && arguments.length === 1, 'It receives the event as first and only argument');
-  //       }
-  //     }
-  //   };
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown eventType="click"}}Click me{{/basic-dropdown/trigger}}
-  //   `);
-  //   triggerEvent('.ember-basic-dropdown-trigger', 'click');
-  // });
+  test('when `stopPropagation` is true the `click` event does not bubble', async function (assert) {
+    assert.expect(1);
+    this.handlerInParent = () => assert.ok(false, 'This should never be called');
 
-  // test('when `stopPropagation` is true the `mousedown` event does not bubble', async function (assert) {
-  //   assert.expect(2);
-  //   this.handlerInParent = () => assert.ok(false, 'This should never be called');
+    await render(hbs`
+      <div onclick={{this.handlerInParent}}>
+        <BasicDropdown as |dd|>
+          <dd.Trigger @stopPropagation={{true}}>Click me</dd.Trigger>
+          <dd.Content>Content</dd.Content>
+        </BasicDropdown>
+      </div>
+    `);
+    await click('.ember-basic-dropdown-trigger');
+    assert.dom('.ember-basic-dropdown-content').exists();
+  });
 
-  //   this.dropdown = {
-  //     uniqueId: 123,
-  //     actions: {
-  //       toggle(e) {
-  //         assert.ok(true, 'The `toggle()` action has been fired');
-  //         assert.ok(e instanceof window.Event && arguments.length === 1, 'It receives the event as first and only argument');
-  //       }
-  //     }
-  //   };
-  //   await render(hbs`
-  //     <div onmousedown={{handlerInParent}}>
-  //       {{#basic-dropdown/trigger dropdown=dropdown stopPropagation=true}}Click me{{/basic-dropdown/trigger}}
-  //     </div>
-  //   `);
-  //   triggerEvent('.ember-basic-dropdown-trigger', 'mousedown');
-  // });
+  test('when `stopPropagation` is true and eventType is "mousedown", the `mousedown` event does not bubble', async function (assert) {
+    assert.expect(1);
+    this.handlerInParent = () => assert.ok(false, 'This should never be called');
+    await render(hbs`
+      <div onmousedown={{this.handlerInParent}}>
+        <BasicDropdown as |dd|>
+          <dd.Trigger @stopPropagation={{true}} @eventType="mousedown">Click me</dd.Trigger>
+          <dd.Content>Content</dd.Content>
+        </BasicDropdown>
+      </div>
+    `);
+    await triggerEvent('.ember-basic-dropdown-trigger', 'mousedown');
+    assert.dom('.ember-basic-dropdown-content').exists();
+  });
 
-  // test('when `stopPropagation` is true and eventType is true, the `click` event does not bubble', async function (assert) {
-  //   assert.expect(2);
-  //   this.handlerInParent = () => assert.ok(false, 'This should never be called');
+  test('Pressing ENTER opens the dropdown', async function (assert) {
+    assert.expect(1);
+    await render(hbs`
+      <BasicDropdown as |dd|>
+        <dd.Trigger>Click me</dd.Trigger>
+        <dd.Content>Content</dd.Content>
+      </BasicDropdown>
+    `);
 
-  //   this.dropdown = {
-  //     uniqueId: 123,
-  //     actions: {
-  //       toggle(e) {
-  //         assert.ok(true, 'The `toggle()` action has been fired');
-  //         assert.ok(e instanceof window.Event && arguments.length === 1, 'It receives the event as first and only argument');
-  //       }
-  //     }
-  //   };
-  //   await render(hbs`
-  //     <div onclick={{handlerInParent}}>
-  //       {{#basic-dropdown/trigger dropdown=dropdown stopPropagation=true eventType="click"}}Click me{{/basic-dropdown/trigger}}
-  //     </div>
-  //   `);
-  //   triggerEvent('.ember-basic-dropdown-trigger', 'click');
-  // });
+    await triggerKeyEvent('.ember-basic-dropdown-trigger', 'keydown', 13);
+    assert.dom('.ember-basic-dropdown-content').exists();
+  });
 
-  // test('Pressing ENTER fires the `toggle` action on the dropdown', async function (assert) {
-  //   assert.expect(2);
-  //   this.dropdown = {
-  //     uniqueId: 123,
-  //     actions: {
-  //       toggle(e) {
-  //         assert.ok(true, 'The `toggle()` action has been fired');
-  //         assert.ok(e instanceof window.Event && arguments.length === 1, 'It receives the event as first and only argument');
-  //       }
-  //     }
-  //   };
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown}}Click me{{/basic-dropdown/trigger}}
-  //   `);
+  test('Pressing SPACE opens the dropdown', async function (assert) {
+    assert.expect(2);
+    this.handleKeydown = function(e) {
+      assert.ok(e.defaultPrevented, 'The event is defaultPrevented');
+    };
+    await render(hbs`
+      <div onkeydown={{this.handleKeydown}}>
+        <BasicDropdown as |dd|>
+          <dd.Trigger>Click me</dd.Trigger>
+          <dd.Content>Content</dd.Content>
+        </BasicDropdown>
+      </div>
+    `);
 
-  //   triggerKeyEvent('.ember-basic-dropdown-trigger', 'keydown', 13);
-  // });
+    await triggerKeyEvent('.ember-basic-dropdown-trigger', 'keydown', 32);
+    assert.dom('.ember-basic-dropdown-content').exists();
+  });
 
-  // test('Pressing SPACE fires the `toggle` action on the dropdown and preventsDefault to avoid scrolling', async function (assert) {
-  //   assert.expect(3);
-  //   this.dropdown = {
-  //     uniqueId: 123,
-  //     actions: {
-  //       toggle(e) {
-  //         assert.ok(true, 'The `toggle()` action has been fired');
-  //         assert.ok(e instanceof window.Event && arguments.length === 1, 'It receives the event as first and only argument');
-  //         assert.ok(e.defaultPrevented, 'The event is defaultPrevented');
-  //       }
-  //     }
-  //   };
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown}}Click me{{/basic-dropdown/trigger}}
-  //   `);
+  test('Pressing ESC closes the dropdown if it is open', async function (assert) {
+    assert.expect(2);
+    await render(hbs`
+      <BasicDropdown as |dd|>
+        <dd.Trigger>Click me</dd.Trigger>
+        <dd.Content>Content</dd.Content>
+      </BasicDropdown>
+    `);
 
-  //   triggerKeyEvent('.ember-basic-dropdown-trigger', 'keydown', 32);
-  // });
+    await click('.ember-basic-dropdown-trigger');
+    assert.dom('.ember-basic-dropdown-content').exists();
+    await triggerKeyEvent('.ember-basic-dropdown-trigger', 'keydown', 27);
+    assert.dom('.ember-basic-dropdown-content').doesNotExist();
+  });
 
-  // test('Pressing ESC fires the `close` action on the dropdown', async function (assert) {
-  //   assert.expect(2);
-  //   this.dropdown = {
-  //     uniqueId: 123,
-  //     actions: {
-  //       close(e) {
-  //         assert.ok(true, 'The `close()` action has been fired');
-  //         assert.ok(e instanceof window.Event && arguments.length === 1, 'It receives the event as first and only argument');
-  //       }
-  //     }
-  //   };
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown}}Click me{{/basic-dropdown/trigger}}
-  //   `);
+  test('Pressing ENTER/SPACE/ESC does nothing of the onKeyDown action returns false', async function (assert) {
+    assert.expect(3);
+    this.onKeyDown = () => false;
+    await render(hbs`
+      <BasicDropdown as |dd|>
+        <dd.Trigger @onKeyDown={{this.onKeyDown}}>Click me</dd.Trigger>
+        <dd.Content>Content</dd.Content>
+      </BasicDropdown>
+    `);
 
-  //   triggerKeyEvent('.ember-basic-dropdown-trigger', 'keydown', 27);
-  // });
+    await triggerKeyEvent('.ember-basic-dropdown-trigger', 'keydown', 13);
+    assert.dom('.ember-basic-dropdown-content').doesNotExist();
+    await triggerKeyEvent('.ember-basic-dropdown-trigger', 'keydown', 32);
+    assert.dom('.ember-basic-dropdown-content').doesNotExist();
+    await triggerKeyEvent('.ember-basic-dropdown-trigger', 'keydown', 27);
+    assert.dom('.ember-basic-dropdown-content').doesNotExist();
+  });
 
-  // test('Pressing ENTER/SPACE/ESC does nothing of the onKeyDown action returns false', async function (assert) {
-  //   assert.expect(0);
-  //   this.onKeyDown = () => false;
-  //   this.dropdown = {
-  //     uniqueId: 123,
-  //     actions: {
-  //       close() {
-  //         assert.ok(false, 'This action is not called');
-  //       },
-  //       toggle() {
-  //         assert.ok(false, 'This action is not called');
-  //       }
-  //     }
-  //   };
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown onKeyDown=onKeyDown}}Click me{{/basic-dropdown/trigger}}
-  //   `);
-
-  //   triggerKeyEvent('.ember-basic-dropdown-trigger', 'keydown', 13);
-  //   triggerKeyEvent('.ember-basic-dropdown-trigger', 'keydown', 32);
-  //   triggerKeyEvent('.ember-basic-dropdown-trigger', 'keydown', 27);
-  // });
-
-  // test('Tapping invokes the toggle action on the dropdown', async function (assert) {
-  //   assert.expect(3);
-  //   this.dropdown = {
-  //     actions: {
-  //       uniqueId: 123,
-  //       toggle(e) {
-  //         assert.ok(true, 'The `toggle()` action has been fired');
-  //         assert.equal(e.type, 'touchend', 'The event that toggles the dropdown is the touchend');
-  //         assert.ok(e instanceof window.Event && arguments.length === 1, 'It receives the event as first and only argument');
-  //       }
-  //     }
-  //   };
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown isTouchDevice=true}}Click me{{/basic-dropdown/trigger}}
-  //   `);
-  //   tapTrigger();
-  // });
+  test('Tapping invokes the toggle action on the dropdown', async function (assert) {
+    assert.expect(2);
+    await render(hbs`
+      <BasicDropdown as |dd|>
+        <dd.Trigger @onKeyDown={{this.onKeyDown}}>Click me</dd.Trigger>
+        <dd.Content>Content</dd.Content>
+      </BasicDropdown>
+    `);
+    await tap('.ember-basic-dropdown-trigger');
+    assert.dom('.ember-basic-dropdown-content').exists();
+    await tap('.ember-basic-dropdown-trigger');
+    assert.dom('.ember-basic-dropdown-content').doesNotExist();
+  });
 
   // test('Firing a mousemove between a touchstart and a touchend (touch scroll) doesn\'t fire the toggle action', async function (assert) {
   //   assert.expect(0);
