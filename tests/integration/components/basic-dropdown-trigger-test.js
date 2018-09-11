@@ -424,65 +424,61 @@ module('Integration | Component | basic-dropdown-trigger', function (hooks) {
     await triggerEvent('.ember-basic-dropdown-trigger', 'touchend');
   });
 
-  // test('If its dropdown is disabled it won\'t respond to mouse, touch or keyboard event', async function (assert) {
-  //   assert.expect(0);
-  //   this.dropdown = {
-  //     uniqueId: 123,
-  //     disabled: true,
-  //     actions: {
-  //       toggle() {
-  //         assert.ok(false, 'This action in not called');
-  //       },
-  //       open() {
-  //         assert.ok(false, 'This action in not called');
-  //       },
-  //       close() {
-  //         assert.ok(false, 'This action in not called');
-  //       }
-  //     }
-  //   };
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown isTouchDevice=true}}Click me{{/basic-dropdown/trigger}}
-  //   `);
-  //   clickTrigger();
-  //   tapTrigger();
-  //   triggerKeyEvent('.ember-basic-dropdown-trigger', 'keydown', 13);
-  //   triggerKeyEvent('.ember-basic-dropdown-trigger', 'keydown', 32);
-  //   triggerKeyEvent('.ember-basic-dropdown-trigger', 'keydown', 27);
-  // });
+  test('If its dropdown is disabled it won\'t respond to mouse, touch or keyboard event', async function (assert) {
+    assert.expect(5);
+    await render(hbs`
+      <BasicDropdown @disabled={{true}} as |dd|>
+        <dd.Trigger>Click me</dd.Trigger>
+        <dd.Content>Content</dd.Content>
+      </BasicDropdown>
+    `);
+    await click('.ember-basic-dropdown-trigger');
+    assert.dom('.ember-basic-dropdown-content').doesNotExist();
+    await tap('.ember-basic-dropdown-trigger');
+    assert.dom('.ember-basic-dropdown-content').doesNotExist();
+    await triggerKeyEvent('.ember-basic-dropdown-trigger', 'keydown', 13);
+    assert.dom('.ember-basic-dropdown-content').doesNotExist();
+    await triggerKeyEvent('.ember-basic-dropdown-trigger', 'keydown', 32);
+    assert.dom('.ember-basic-dropdown-content').doesNotExist();
+    await triggerKeyEvent('.ember-basic-dropdown-trigger', 'keydown', 27);
+    assert.dom('.ember-basic-dropdown-content').doesNotExist();
+  });
 
-  // // Focus
-  // test('If it receives an `onFocusIn` action, it is invoked if a focusin event is fired on the trigger', async function (assert) {
-  //   assert.expect(3);
-  //   this.dropdown = { uniqueId: 123, isOpen: true, actions: { reposition() { } } };
-  //   this.onFocusIn = (api, e) => {
-  //     assert.ok(true, 'The action is invoked');
-  //     assert.equal(api, this.dropdown, 'The first argument is the API');
-  //     assert.ok(e instanceof window.Event, 'the second argument is an event');
-  //   };
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown onFocusIn=onFocusIn}}
-  //       <input type="text" id="test-input-focusin" />
-  //     {{/basic-dropdown/trigger}}
-  //   `);
-  //   await focus('#test-input-focusin');
-  // });
+  // Focus
+  test('If it receives an `onFocusIn` action, it is invoked if a focusin event is fired on the trigger', async function (assert) {
+    assert.expect(3);
+    this.onFocusIn = (dropdown, e) => {
+      assert.ok(true, "The action is invoked");
+      assert.ok(dropdown.hasOwnProperty("uniqueId"), "receives the dropdown as 1st argument");
+      assert.ok(e instanceof window.Event, "the second argument is an event");
+    };
+    await render(hbs`
+      <BasicDropdown as |dd|>
+        <dd.Trigger @onFocusIn={{this.onFocusIn}}><input type="text" id="test-input-focusin" /></dd.Trigger>
+        <dd.Content>Content</dd.Content>
+      </BasicDropdown>
+    `);
+    await focus('#test-input-focusin');
+  });
 
-  // test('If it receives an `onFocusIn` action, it is invoked if a focusin event is fired on the trigger', async function (assert) {
-  //   assert.expect(3);
-  //   this.dropdown = { uniqueId: 123, isOpen: true, actions: { reposition() { } } };
-  //   this.onFocusOut = (api, e) => {
-  //     assert.ok(true, 'The action is invoked');
-  //     assert.equal(api, this.dropdown, 'The first argument is the API');
-  //     assert.ok(e instanceof window.Event, 'the second argument is an event');
-  //   };
-  //   await render(hbs`
-  //     {{#basic-dropdown/trigger dropdown=dropdown onFocusOut=onFocusOut}}
-  //       <input type="text" id="test-input-focusout" />
-  //     {{/basic-dropdown/trigger}}
-  //   `);
-  //   await focus('#test-input-focusout');
-  // });
+  test('If it receives an `onFocusOut` action, it is invoked if a focusin event is fired on the trigger', async function (assert) {
+    assert.expect(3);
+    this.dropdown = { uniqueId: 123, isOpen: true, actions: { reposition() { } } };
+    this.onFocusOut = (dropdown, e) => {
+      assert.ok(true, 'The action is invoked');
+      assert.ok(dropdown.hasOwnProperty("uniqueId"), "receives the dropdown as 1st argument");
+      assert.ok(e instanceof window.Event, 'the second argument is an event');
+    };
+    await render(hbs`
+      <BasicDropdown as |dd|>
+        <dd.Trigger @onFocusOut={{this.onFocusOut}}><input type="text" id="test-input-focusout" /></dd.Trigger>
+        <dd.Content>Content</dd.Content>
+      </BasicDropdown>
+      <input type="text" id="test-external-input">
+    `);
+    await focus('#test-input-focusout');
+    await focus('#test-external-input');
+  });
 
   // // Decorating and overriding default event handlers
   // test('A user-supplied onMouseDown action will execute before the default toggle behavior', async function (assert) {
