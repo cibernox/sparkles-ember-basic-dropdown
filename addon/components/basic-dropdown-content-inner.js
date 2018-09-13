@@ -1,13 +1,19 @@
 import Component from 'sparkles-component';
 import { getOwner } from '@ember/application';
-import { scheduleOnce, join } from "@ember/runloop";
+import { scheduleOnce, join } from '@ember/runloop';
 import { getScrollParent } from '../utils/calculate-position';
+import {
+  distributeScroll,
+  getAvailableScroll,
+  getScrollDeltas
+} from '../utils/scroll-helpers';
 
 const IS_TOUCH_DEVICE = Boolean(!!window && 'ontouchstart' in window);
 
 export default class BasicDropdownContentInner extends Component {
   _handleRootMouseDown = this._handleRootMouseDown.bind(this);
   _runloopAwareReposition = this._runloopAwareReposition.bind(this);
+  _wheelHandler = this._wheelHandler.bind(this);
   get animationEnabled() {
     let config = getOwner(this).resolveRegistration('config:environment');
     return config.environment !== 'test';
@@ -127,11 +133,52 @@ export default class BasicDropdownContentInner extends Component {
   // These two functions wire up scroll handling if `args.preventScroll` is true.
   // These prevent all scrolling that isn't inside of the dropdown.
   _addPreventScrollEvent() {
-    document.addEventListener('wheel', this.wheelHandler, { capture: true, passive: false });
+    document.addEventListener('wheel', this._wheelHandler, { capture: true, passive: false });
   }
 
   _removePreventScrollEvent() {
-    document.removeEventListener('wheel', this.wheelHandler, { capture: true, passive: false });
+    document.removeEventListener('wheel', this._wheelHandler, { capture: true, passive: false });
+  }
+
+  _wheelHandler(event) {
+    const element = this.dropdownElement;
+    if (element.contains(event.target) || element === event.target) {
+      // Discover the amount of scrollable canvas that is within the dropdown.
+      const availableScroll = getAvailableScroll(event.target, element);
+
+      // Calculate what the event's desired change to that scrollable canvas is.
+      let { deltaX, deltaY } = getScrollDeltas(event);
+
+      // If the consequence of the wheel action would result in scrolling beyond
+      // the scrollable canvas of the dropdown, call preventDefault() and clamp
+      // the value of the delta to the available scroll size.
+      if (deltaX < availableScroll.deltaXNegative) {
+        deltaX = availableScroll.deltaXNegative;
+        event.preventDefault();
+      } else if (deltaX > availableScroll.deltaXPositive) {
+        deltaX = availableScroll.deltaXPositive;
+        event.preventDefault();
+      } else if (deltaY < availableScroll.deltaYNegative) {
+        deltaY = availableScroll.deltaYNegative;
+        event.preventDefault();
+      } else if (deltaY > availableScroll.deltaYPositive) {
+        deltaY = availableScroll.deltaYPositive;
+        event.preventDefault();
+      }
+
+      // Add back in the default behavior for the two good states that the above
+      // `preventDefault()` code will break.
+      // - Two-axis scrolling on a one-axis scroll container
+      // - The last relevant wheel event if the scroll is overshooting
+
+      // Also, don't attempt to do this if both of `deltaX` or `deltaY` are 0.
+      if (event.defaultPrevented && (deltaX || deltaY)) {
+        distributeScroll(deltaX, deltaY, event.target, element);
+      }
+    } else {
+      // Scrolling outside of the dropdown is prohibited.
+      event.preventDefault();
+    }
   }
 
   // These two functions wire up scroll handling if `args.preventScroll` is false.

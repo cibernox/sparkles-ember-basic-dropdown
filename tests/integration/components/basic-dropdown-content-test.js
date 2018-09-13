@@ -2,9 +2,9 @@ import { module, test } from 'qunit';
 import { setupRenderingTest } from 'ember-qunit';
 import hbs from 'htmlbars-inline-precompile';
 import { render, click, focus, blur, triggerEvent, triggerKeyEvent, tap } from '@ember/test-helpers';
+import { run } from '@ember/runloop';
 // import { tapTrigger, nativeTap } from 'ember-basic-dropdown/test-support/helpers';
 // import { render, triggerEvent, triggerKeyEvent, focus } from '@ember/test-helpers';
-// import { run } from '@ember/runloop';
 // import { set } from "@ember/object"
 
 module('Integration | Component | basic-dropdown-content', function (hooks) {
@@ -170,184 +170,179 @@ module('Integration | Component | basic-dropdown-content', function (hooks) {
     `);
   });
 
-  // test('The component is not repositioned if it is closed', async function (assert) {
-  //   assert.expect(0);
-  //   this.dropdown = {
-  //     uniqueId: 'e123',
-  //     isOpen: false,
-  //     actions: {
-  //       reposition() {
-  //         assert.ok(false, 'Reposition is invoked exactly once');
-  //       }
-  //     }
-  //   };
-  //   await render(hbs`
-  //     <div id="destination-el"></div>
-  //     {{#basic-dropdown/content dropdown=dropdown destination='destination-el'}}Lorem ipsum{{/basic-dropdown/content}}
-  //   `);
-  // });
+  test('The component is not repositioned if closed', async function (assert) {
+    assert.expect(0);
+    this.dropdown = {
+      uniqueId: 'e123',
+      isOpen: false,
+      actions: {
+        reposition() {
+          assert.ok(true, 'Reposition is invoked exactly once');
+        }
+      }
+    };
+    await render(hbs`
+      <div id="destination-el"></div>
+      <BasicDropdownContent @id="my-content" @dropdown={{this.dropdown}} @destination="destination-el">Lorem ipsum</BasicDropdownContent>
+    `);
+  });
 
-  // test('The component cancels events when preventScroll is true', async function (assert) {
-  //   assert.expect(4);
-  //   this.dropdown = {
-  //     uniqueId: 'e123',
-  //     isOpen: true,
-  //     actions: {
-  //       reposition() { }
-  //     }
-  //   };
+  test('The component cancels events when receives `@preventScroll={{true}}`', async function (assert) {
+    assert.expect(4);
+    await render(hbs`
+      <div id="destination-el"></div>
+      <div id="outer-div" style="width: 100px; height: 100px; overflow: auto;">
+        <div style="width: 200px; height: 200px;">content scroll test</div>
+      </div>
+      <BasicDropdown @initiallyOpened={{true}} @destination="destination-el" as |dd|>
+        <dd.Trigger>Click me</dd.Trigger>
+        <dd.Content @preventScroll={{true}}>
+          <div id="inner-div" style="width: 100px; height: 100px; overflow: auto;">
+            <div style="width: 200px; height: 200px;">content scroll test</div>
+          </div>
+        </dd.Content>
+      </BasicDropdown>
+    `);
 
-  //   await render(hbs`
-  //     <div id="destination-el"></div>
-  //     <div id="outer-div" style="width: 100px; height: 100px; overflow: auto;">
-  //       <div style="width: 200px; height: 200px;">content scroll test</div>
-  //     </div>
-  //     {{#basic-dropdown/content preventScroll=true dropdown=dropdown destination='destination-el'}}
-  //       <div id="inner-div" style="width: 100px; height: 100px; overflow: auto;">
-  //         <div style="width: 200px; height: 200px;">content scroll test</div>
-  //       </div>
-  //     {{/basic-dropdown/content}}
-  //   `);
+    let innerScrollable = this.element.querySelector('#inner-div');
+    let innerScrollableEvent = new WheelEvent('wheel', { deltaY: 4, cancelable: true, bubbles: true });
+    run(() => innerScrollable.dispatchEvent(innerScrollableEvent));
+    assert.strictEqual(innerScrollableEvent.defaultPrevented, false, 'The inner scrollable does not cancel wheel events.');
 
-  //   let innerScrollable = this.element.querySelector('#inner-div');
-  //   let innerScrollableEvent = new WheelEvent('wheel', { deltaY: 4, cancelable: true, bubbles: true });
-  //   run(() => innerScrollable.dispatchEvent(innerScrollableEvent));
-  //   assert.strictEqual(innerScrollableEvent.defaultPrevented, false, 'The inner scrollable does not cancel wheel events.');
+    innerScrollable.scrollTop = 4;
+    let innerScrollableCanceledEvent = new WheelEvent('wheel', { deltaY: -10, cancelable: true, bubbles: true });
+    run(() => innerScrollable.dispatchEvent(innerScrollableCanceledEvent));
+    assert.strictEqual(innerScrollableCanceledEvent.defaultPrevented, true, 'The inner scrollable cancels out of bound wheel events.');
+    assert.strictEqual(innerScrollable.scrollTop, 0, 'The innerScrollable was scrolled anyway.');
 
-  //   innerScrollable.scrollTop = 4;
-  //   let innerScrollableCanceledEvent = new WheelEvent('wheel', { deltaY: -10, cancelable: true, bubbles: true });
-  //   run(() => innerScrollable.dispatchEvent(innerScrollableCanceledEvent));
-  //   assert.strictEqual(innerScrollableCanceledEvent.defaultPrevented, true, 'The inner scrollable cancels out of bound wheel events.');
-  //   assert.strictEqual(innerScrollable.scrollTop, 0, 'The innerScrollable was scrolled anyway.');
+    let outerScrollable = this.element.querySelector('#outer-div');
+    let outerScrollableEvent = new WheelEvent('wheel', { deltaY: 4, cancelable: true, bubbles: true });
+    run(() => outerScrollable.dispatchEvent(outerScrollableEvent));
+    assert.strictEqual(outerScrollableEvent.defaultPrevented, true, 'The outer scrollable cancels wheel events.');
+  });
 
-  //   let outerScrollable = this.element.querySelector('#outer-div');
-  //   let outerScrollableEvent = new WheelEvent('wheel', { deltaY: 4, cancelable: true, bubbles: true });
-  //   run(() => outerScrollable.dispatchEvent(outerScrollableEvent));
-  //   assert.strictEqual(outerScrollableEvent.defaultPrevented, true, 'The outer scrollable cancels wheel events.');
-  // });
+  test('The component is repositioned if the window scrolls', async function (assert) {
+    assert.expect(1);
+    let repositions = 0;
+    this.dropdown = {
+      uniqueId: 'e123',
+      isOpen: true,
+      actions: {
+        reposition() {
+          repositions++;
+        }
+      }
+    };
+    await render(hbs`
+      <div id="destination-el"></div>
+      <BasicDropdownContent @id="my-content" @dropdown={{this.dropdown}} @destination="destination-el">Lorem ipsum</BasicDropdownContent>
+    `);
+    run(() => window.dispatchEvent(new window.Event('scroll')));
+    assert.equal(repositions, 2, 'The component has been repositioned twice');
+  });
 
-  // test('The component is repositioned if the window scrolls', async function (assert) {
-  //   assert.expect(1);
-  //   let repositions = 0;
-  //   this.dropdown = {
-  //     uniqueId: 'e123',
-  //     isOpen: true,
-  //     actions: {
-  //       reposition() {
-  //         repositions++;
-  //       }
-  //     }
-  //   };
-  //   await render(hbs`
-  //     <div id="destination-el"></div>
-  //     {{#basic-dropdown/content dropdown=dropdown destination='destination-el'}}Lorem ipsum{{/basic-dropdown/content}}
-  //   `);
-  //   run(() => window.dispatchEvent(new window.Event('scroll')));
-  //   assert.equal(repositions, 2, 'The component has been repositioned twice');
-  // });
+  test('The component is repositioned if the window is resized', async function (assert) {
+    assert.expect(1);
+    let repositions = 0;
+    this.dropdown = {
+      uniqueId: 'e123',
+      isOpen: true,
+      actions: {
+        reposition() {
+          repositions++;
+        }
+      }
+    };
+    await render(hbs`
+      <div id="destination-el"></div>
+      <BasicDropdownContent @id="my-content" @dropdown={{this.dropdown}} @destination="destination-el">Lorem ipsum</BasicDropdownContent>
+    `);
+    run(() => window.dispatchEvent(new window.Event('resize')));
+    assert.equal(repositions, 2, 'The component has been repositioned twice');
+  });
 
-  // test('The component is repositioned if the window is resized', async function (assert) {
-  //   assert.expect(1);
-  //   let repositions = 0;
-  //   this.dropdown = {
-  //     uniqueId: 'e123',
-  //     isOpen: true,
-  //     actions: {
-  //       reposition() {
-  //         repositions++;
-  //       }
-  //     }
-  //   };
-  //   await render(hbs`
-  //     <div id="destination-el"></div>
-  //     {{#basic-dropdown/content dropdown=dropdown destination='destination-el'}}Lorem ipsum{{/basic-dropdown/content}}
-  //   `);
-  //   run(() => window.dispatchEvent(new window.Event('resize')));
-  //   assert.equal(repositions, 2, 'The component has been repositioned twice');
-  // });
+  test('The component is repositioned if the orientation changes', async function (assert) {
+    assert.expect(1);
+    let repositions = 0;
+    this.dropdown = {
+      uniqueId: 'e123',
+      isOpen: true,
+      actions: {
+        reposition() {
+          repositions++;
+        }
+      }
+    };
+    await render(hbs`
+      <div id="destination-el"></div>
+      <BasicDropdownContent @id="my-content" @dropdown={{this.dropdown}} @destination="destination-el">Lorem ipsum</BasicDropdownContent>
+    `);
+    run(() => window.dispatchEvent(new window.Event('orientationchange')));
+    assert.equal(repositions, 2, 'The component has been repositioned twice');
+  });
 
-  // test('The component is repositioned if the orientation changes', async function (assert) {
-  //   assert.expect(1);
-  //   let repositions = 0;
-  //   this.dropdown = {
-  //     uniqueId: 'e123',
-  //     isOpen: true,
-  //     actions: {
-  //       reposition() {
-  //         repositions++;
-  //       }
-  //     }
-  //   };
-  //   await render(hbs`
-  //     <div id="destination-el"></div>
-  //     {{#basic-dropdown/content dropdown=dropdown destination='destination-el'}}Lorem ipsum{{/basic-dropdown/content}}
-  //   `);
-  //   run(() => window.dispatchEvent(new window.Event('orientationchange')));
-  //   assert.equal(repositions, 2, 'The component has been repositioned twice');
-  // });
+  test('The component is repositioned if the content of the dropdown changs', async function (assert) {
+    assert.expect(1);
+    let done = assert.async();
+    let repositions = 0;
+    this.dropdown = {
+      uniqueId: 'e123',
+      isOpen: true,
+      actions: {
+        reposition() {
+          repositions++;
+          if (repositions === 2) {
+            assert.equal(repositions, 2, 'It was repositioned twice');
+            done();
+          }
+        }
+      }
+    };
+    await render(hbs`
+      <div id="destination-el"></div>
+      <BasicDropdownContent @id="my-content" @dropdown={{this.dropdown}} @destination="destination-el">
+        <div id="content-target-div"></div>
+      </BasicDropdownContent>
+    `);
+    run(() => {
+      let target = document.getElementById('content-target-div');
+      let span = document.createElement('SPAN');
+      target.appendChild(span);
+    });
+  });
 
-  // test('The component is repositioned if the content of the dropdown changs', async function (assert) {
-  //   assert.expect(1);
-  //   let done = assert.async();
-  //   let repositions = 0;
-  //   this.dropdown = {
-  //     uniqueId: 'e123',
-  //     isOpen: true,
-  //     actions: {
-  //       reposition() {
-  //         repositions++;
-  //         if (repositions === 2) {
-  //           assert.equal(repositions, 2, 'It was repositioned twice');
-  //           done();
-  //         }
-  //       }
-  //     }
-  //   };
-  //   await render(hbs`
-  //     <div id="destination-el"></div>
-  //     {{#basic-dropdown/content dropdown=dropdown destination='destination-el'}}
-  //       <div id="content-target-div"></div>
-  //     {{/basic-dropdown/content}}
-  //   `);
-  //   run(() => {
-  //     let target = document.getElementById('content-target-div');
-  //     let span = document.createElement('SPAN');
-  //     target.appendChild(span);
-  //   });
-  // });
+  test('A renderInPlace component is repositioned if the window scrolls', async function (assert) {
+    assert.expect(1);
+    let repositions = 0;
+    this.dropdown = {
+      uniqueId: 'e123',
+      isOpen: true,
+      actions: {
+        reposition() {
+          repositions++;
+        }
+      }
+    };
+    await render(hbs`
+      <div id="destination-el"></div>
+      <BasicDropdownContent @id="my-content" @dropdown={{this.dropdown}} @destination="destination-el" @renderInPlace={{true}}>Lorem ipsum</BasicDropdownContent>
+    `);
+    run(() => window.dispatchEvent(new window.Event('scroll')));
+    assert.equal(repositions, 2, 'The component has been repositioned twice');
+  });
 
-  // test('A renderInPlace component is repositioned if the window scrolls', async function (assert) {
-  //   assert.expect(1);
-  //   let repositions = 0;
-  //   this.dropdown = {
-  //     uniqueId: 'e123',
-  //     isOpen: true,
-  //     actions: {
-  //       reposition() {
-  //         repositions++;
-  //       }
-  //     }
-  //   };
-  //   await render(hbs`
-  //     <div id="destination-el"></div>
-  //     {{#basic-dropdown/content dropdown=dropdown renderInPlace=true destination='destination-el'}}Lorem ipsum{{/basic-dropdown/content}}
-  //   `);
-  //   run(() => window.dispatchEvent(new window.Event('scroll')));
-  //   assert.equal(repositions, 2, 'The component has been repositioned twice');
-  // });
-
-  // // Overlay
-  // test('If it receives an `overlay=true` option, there is an overlay covering all the screen', async function (assert) {
-  //   assert.expect(2);
-  //   this.dropdown = { uniqueId: 'e123', isOpen: true, actions: { reposition() { } } };
-  //   await render(hbs`
-  //     <div id="destination-el"></div>
-  //     {{#basic-dropdown/content dropdown=dropdown destination='destination-el' overlay=true}}
-  //       <input type="text" id="test-input-focusin" />
-  //     {{/basic-dropdown/content}}
-  //   `);
-  //   assert.dom('.ember-basic-dropdown-overlay').exists('There is one overlay');
-  //   run(this, 'set', 'dropdown.isOpen', false);
-  //   assert.dom('.ember-basic-dropdown-overlay').doesNotExist('There is no overlay when closed');
-  // });
+  // Overlay
+  test('If it receives an `@overlay={{true}}` option, there is an overlay covering all the screen', async function (assert) {
+    assert.expect(2);
+    await render(hbs`
+      <div id="destination-el"></div>
+      <BasicDropdown @initiallyOpened={{true}} @destination="destination-el" as |dd|>
+        <dd.Trigger>Click me</dd.Trigger>
+        <dd.Content @overlay={{true}}>Content</dd.Content>
+      </BasicDropdown>
+    `);
+    assert.dom('.ember-basic-dropdown-overlay').exists('There is one overlay');
+    await click('.ember-basic-dropdown-trigger');
+    assert.dom('.ember-basic-dropdown-overlay').doesNotExist('There is no overlay when closed');
+  });
 });
