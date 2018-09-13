@@ -1,11 +1,8 @@
 import { module, test } from 'qunit';
 import { setupRenderingTest } from 'ember-qunit';
 import hbs from 'htmlbars-inline-precompile';
-import { render, click, focus, blur, triggerEvent, triggerKeyEvent, tap } from '@ember/test-helpers';
+import { render, click, focus, blur, triggerEvent, triggerKeyEvent } from '@ember/test-helpers';
 import { run } from '@ember/runloop';
-// import { tapTrigger, nativeTap } from 'ember-basic-dropdown/test-support/helpers';
-// import { render, triggerEvent, triggerKeyEvent, focus } from '@ember/test-helpers';
-// import { set } from "@ember/object"
 
 module('Integration | Component | basic-dropdown-content', function (hooks) {
   setupRenderingTest(hooks);
