@@ -5,11 +5,7 @@ export default class BasicDropdownTrigger extends Component {
   _handleMouseDown = this._handleMouseDown.bind(this);
   _touchMoveHandler = this._touchMoveHandler.bind(this);
   _isTouchDevice = Object.hasOwnProperty.call(this.args, 'isTouchDevice') ? this.args.isTouchDevice : IS_TOUCH_DEVICE;
-
-  @tracked('args.eventType')
-  get eventType() {
-    return this.args.eventType || 'mousedown';
-  }
+  eventType = this.args.eventType || 'mousedown';
 
   didInsertElement() {
     this.triggerEl = document.querySelector(`[data-ebd-id="${this.args.dropdown.uniqueId}"]`);
