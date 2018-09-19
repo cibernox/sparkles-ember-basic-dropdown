@@ -9,10 +9,10 @@ interface CalculatePositionOpts {
 interface StyleObj {
   [k: string]: any
 }
-interface PositionInformation {
+export interface PositionInformation {
   horizontalPosition?: string;
   verticalPosition?: string;
-  style?: StyleObj
+  style: StyleObj
 }
 /**
   Function used to calculate the position of the content of the dropdown.
@@ -174,7 +174,7 @@ export function calculateInPlacePosition(
   { horizontalPosition, verticalPosition }: CalculatePositionOpts
 ): PositionInformation {
   let dropdownRect;
-  let positionData: PositionInformation = {};
+  let positionData: PositionInformation = { style: {} };
   if (horizontalPosition === 'auto') {
     let triggerRect = trigger.getBoundingClientRect();
     dropdownRect = content.getBoundingClientRect();

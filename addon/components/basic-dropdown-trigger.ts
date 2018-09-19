@@ -1,21 +1,9 @@
 import Component from 'sparkles-component';
+import { DropdownApi } from './basic-dropdown';
+
 const IS_TOUCH_DEVICE = Boolean(!!window && "ontouchstart" in window);
 
-interface DropdownActions {
-  open: Function;
-  close: Function;
-  toggle: Function;
-  reposition: Function;
-}
-
-interface DropdownApi {
-  uniqueId: string;
-  isOpen: boolean;
-  disabled: boolean;
-  actions: DropdownActions
-}
-
-interface TriggerArgs {
+interface BasicDropdownTriggerArgs {
   eventType?: string
   dropdown: DropdownApi,
   onMouseDown?: (dropdown: DropdownApi, e: MouseEvent) => boolean | undefined;
@@ -32,7 +20,7 @@ interface TriggerArgs {
   stopPropagation?: boolean
 }
 
-export default class BasicDropdownTrigger extends Component<TriggerArgs> {
+export default class BasicDropdownTrigger extends Component<BasicDropdownTriggerArgs> {
   triggerEl: HTMLElement | null = null;
   toggleIsBeingHandledByTouchEvents = false;
   eventType = this.args.eventType || 'mousedown';
