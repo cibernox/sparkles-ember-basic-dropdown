@@ -10,7 +10,7 @@ interface DropdownActions {
   open: Function;
   close: Function;
   toggle: Function;
-  reposition: Function;
+  reposition: (...args: any[]) => {};
 }
 
 export interface DropdownApi {
@@ -158,14 +158,14 @@ export default class BasicDropdown extends Component<BasicDropdownArgs> {
     return this._applyReposition(triggerElement, dropdownElement, positionData);
   }
 
-  _updateState(changes: object) {
+  private _updateState(changes: object) {
     this.publicAPI = Object.assign({}, this.publicAPI, changes);
     if (this.args.registerAPI) {
       this.args.registerAPI(this.publicAPI);
     }
   }
 
-  _applyReposition(_trigger: Element, dropdown: Element, positions: PositionInformation) {
+  private _applyReposition(_trigger: Element, dropdown: Element, positions: PositionInformation) {
     let changes: PositionChanges = {
       hPosition: positions.horizontalPosition,
       vPosition: positions.verticalPosition,
@@ -225,14 +225,14 @@ export default class BasicDropdown extends Component<BasicDropdownArgs> {
     return changes;
   }
 
-  _disable() {
+  private _disable() {
     if (this.publicAPI.isOpen) {
       this.publicAPI.actions.close();
     }
     this._updateState({ disabled: true });
   }
 
-  _enable() {
+  private _enable() {
     this._updateState({ disabled: false });
   }
 }

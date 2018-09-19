@@ -202,7 +202,10 @@ export function calculateInPlacePosition(
   return positionData;
 }
 
-export function getScrollParent(element: Element) {
+export function getScrollParent(element: Node) {
+  if (!(element instanceof Element)) {
+    throw new Error('getScrollParent should have received a DOM Element, it received a Node instead');
+  }
   let style = window.getComputedStyle(element);
   let excludeStaticParent = style.position === "absolute";
   let overflowRegex = /(auto|scroll)/;

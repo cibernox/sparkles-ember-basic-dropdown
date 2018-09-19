@@ -86,7 +86,7 @@ export function getScrollLineHeight() {
   return scrollLineHeight;
 }
 
-export function getAvailableScroll(element: HTMLElement, container: HTMLElement) {
+export function getAvailableScroll(element: Element, container: Element) {
   const availableScroll = {
     deltaXNegative: 0,
     deltaXPositive: 0,
@@ -95,7 +95,7 @@ export function getAvailableScroll(element: HTMLElement, container: HTMLElement)
   };
 
   let scrollLeftMax, scrollTopMax;
-  let currentElement: HTMLElement | null = element;
+  let currentElement: Element | null = element;
   while (currentElement !== null && container.contains(currentElement) || container === currentElement) {
     scrollLeftMax = currentElement.scrollWidth - currentElement.clientWidth;
     scrollTopMax = currentElement.scrollHeight - currentElement.clientHeight;
@@ -104,7 +104,7 @@ export function getAvailableScroll(element: HTMLElement, container: HTMLElement)
     availableScroll.deltaXPositive += scrollLeftMax - currentElement.scrollLeft;
     availableScroll.deltaYNegative += -currentElement.scrollTop;
     availableScroll.deltaYPositive += scrollTopMax - currentElement.scrollTop;
-    currentElement = currentElement.parentNode as HTMLElement;
+    currentElement = currentElement.parentNode as Element;
   }
 
   return availableScroll;
