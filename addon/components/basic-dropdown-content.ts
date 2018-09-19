@@ -5,7 +5,7 @@ interface IArgs {
 }
 
 export default class BasicDropdownContent extends Component<IArgs> {
-  @tracked('destination')
+  @tracked('args')
   get destinationElement() {
     return document.getElementById(this.args.destination);
   }

@@ -67,7 +67,13 @@ export default class BasicDropdown extends Component<BasicDropdownArgs> {
   @tracked hPosition = null;
   @tracked vPosition = null;
   [k: string]: any;
-  // @tracked publicAPI = {};
+
+  constructor(args: BasicDropdownArgs) {
+    super(args);
+    this._updateState({});
+    this.contentId = `ember-basic-dropdown-content-${this.publicAPI.uniqueId}`;
+  }
+
   get destination() {
     if (this.args.destination !== undefined) {
       return this.args.destination;
@@ -75,16 +81,10 @@ export default class BasicDropdown extends Component<BasicDropdownArgs> {
     let config = getOwner(this).resolveRegistration('config:environment');
     if (config.environment === 'test') {
       if (DEBUG) {
-        return requirejs('@ember/test-helpers/dom/get-root-element').default().id; // TS:ignore
+        return requirejs('@ember/test-helpers/dom/get-root-element').default().id;
       }
     }
     return config['ember-basic-dropdown'] && config['ember-basic-dropdown'].destination || 'ember-basic-dropdown-wormhole';
-  }
-
-  constructor(args: BasicDropdownArgs) {
-    super(args);
-    this._updateState({});
-    this.contentId = `ember-basic-dropdown-content-${this.publicAPI.uniqueId}`;
   }
 
   didUpdate() {
