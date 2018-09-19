@@ -58,7 +58,7 @@ export function getScrollDeltas({
   return { deltaX, deltaY };
 }
 
-let scrollLineHeight = null;
+let scrollLineHeight: number | undefined;
 export function getScrollLineHeight() {
   if (!scrollLineHeight) {
     const iframe = document.createElement("iframe");
@@ -69,19 +69,24 @@ export function getScrollLineHeight() {
     iframe.style.height = "0px";
     iframe.style.border = "none";
     document.body.appendChild(iframe);
-    const iframeDocument = iframe.contentWindow.document;
+    let theWindow = iframe.contentWindow;
+    if (theWindow === null) {
+      return 0;
+    }
+    const iframeDocument = theWindow.document;
     iframeDocument.open();
     iframeDocument.write(
       "<!doctype html><html><head></head><body><span>X</span></body></html>"
     );
     iframeDocument.close();
-    scrollLineHeight = iframeDocument.body.firstElementChild.offsetHeight;
+    let firstEl = iframeDocument.body.firstElementChild as HTMLElement;
+    scrollLineHeight = firstEl.offsetHeight;
     document.body.removeChild(iframe);
   }
   return scrollLineHeight;
 }
 
-export function getAvailableScroll(element, container) {
+export function getAvailableScroll(element: HTMLElement, container: HTMLElement) {
   const availableScroll = {
     deltaXNegative: 0,
     deltaXPositive: 0,
@@ -90,18 +95,25 @@ export function getAvailableScroll(element, container) {
   };
 
   let scrollLeftMax, scrollTopMax;
-  while (container.contains(element) || container === element) {
-    scrollLeftMax = element.scrollWidth - element.clientWidth;
-    scrollTopMax = element.scrollHeight - element.clientHeight;
+  let currentElement: HTMLElement | null = element;
+  while (currentElement !== null && container.contains(currentElement) || container === currentElement) {
+    scrollLeftMax = currentElement.scrollWidth - currentElement.clientWidth;
+    scrollTopMax = currentElement.scrollHeight - currentElement.clientHeight;
 
-    availableScroll.deltaXNegative += -element.scrollLeft;
-    availableScroll.deltaXPositive += scrollLeftMax - element.scrollLeft;
-    availableScroll.deltaYNegative += -element.scrollTop;
-    availableScroll.deltaYPositive += scrollTopMax - element.scrollTop;
-    element = element.parentNode;
+    availableScroll.deltaXNegative += -currentElement.scrollLeft;
+    availableScroll.deltaXPositive += scrollLeftMax - currentElement.scrollLeft;
+    availableScroll.deltaYNegative += -currentElement.scrollTop;
+    availableScroll.deltaYPositive += scrollTopMax - currentElement.scrollTop;
+    currentElement = currentElement.parentNode as HTMLElement;
   }
 
   return availableScroll;
+}
+
+interface ScrollInformation {
+  element: Element,
+  scrollLeft: number;
+  scrollTop: number;
 }
 
 /**
@@ -115,13 +127,13 @@ export function getAvailableScroll(element, container) {
  * @return {ScrollInforamtion}
  */
 function calculateScrollDistribution(
-  deltaX,
-  deltaY,
-  element,
-  container,
-  accumulator = []
-) {
-  const scrollInformation = {
+  deltaX: number,
+  deltaY: number,
+  element: Element,
+  container: Element,
+  accumulator: ScrollInformation[] = []
+): ScrollInformation[] {
+  const scrollInformation: ScrollInformation = {
     element,
     scrollLeft: 0,
     scrollTop: 0
@@ -164,7 +176,11 @@ function calculateScrollDistribution(
     }
   }
 
-  if (element !== container && (deltaX || deltaY)) {
+  if (
+    element !== container &&
+    (deltaX || deltaY) &&
+    element.parentNode instanceof HTMLElement
+  ) {
     return calculateScrollDistribution(
       deltaX,
       deltaY,
@@ -179,7 +195,7 @@ function calculateScrollDistribution(
 
 // Recursively walks up scroll containers until the delta is distributed or we
 // run out of elements in the allowed-to-scroll container.
-export function distributeScroll(deltaX, deltaY, element, container) {
+export function distributeScroll(deltaX: number, deltaY: number, element: Element, container: Element) {
   const scrollInfos = calculateScrollDistribution(
     deltaX,
     deltaY,
