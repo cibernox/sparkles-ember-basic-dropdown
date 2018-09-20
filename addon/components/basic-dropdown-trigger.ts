@@ -1,21 +1,21 @@
 import Component from 'sparkles-component';
-import { DropdownApi } from './basic-dropdown';
+import { DropdownApi, EventHandler } from "./basic-dropdown";
 
 const IS_TOUCH_DEVICE = Boolean(!!window && "ontouchstart" in window);
 
 interface BasicDropdownTriggerArgs {
   eventType?: string
   dropdown: DropdownApi,
-  onMouseDown?: (dropdown: DropdownApi, e: MouseEvent) => boolean | undefined;
-  onTouchEnd?: (dropdown: DropdownApi, e: TouchEvent) => boolean | undefined;
-  onMouseEnter?: (dropdown: DropdownApi, e: MouseEvent) => boolean | undefined;
-  onMouseLeave?: (dropdown: DropdownApi, e: MouseEvent) => boolean | undefined;
-  onFocus?: (dropdown: DropdownApi, e: FocusEvent) => boolean | undefined;
-  onBlur?: (dropdown: DropdownApi, e: FocusEvent) => boolean | undefined;
-  onFocusIn?: (dropdown: DropdownApi, e: Event) => boolean | undefined;
-  onFocusOut?: (dropdown: DropdownApi, e: Event) => boolean | undefined;
-  onKeyDown?: (dropdown: DropdownApi, e: KeyboardEvent) => boolean | undefined;
-  onKeyUp?: (dropdown: DropdownApi, e: KeyboardEvent) => boolean | undefined;
+  onMouseDown?: EventHandler<MouseEvent>;
+  onMouseEnter?: EventHandler<MouseEvent>;
+  onMouseLeave?: EventHandler<MouseEvent>;
+  onFocus?: EventHandler<FocusEvent>;
+  onBlur?: EventHandler<FocusEvent>;
+  onTouchEnd?: EventHandler<TouchEvent>;
+  onFocusIn?: EventHandler;
+  onFocusOut?: EventHandler;
+  onKeyDown?: EventHandler<KeyboardEvent>
+  onKeyUp?: EventHandler<KeyboardEvent>
   isTouchDevice?: boolean,
   stopPropagation?: boolean
 }

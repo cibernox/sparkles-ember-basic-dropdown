@@ -13,6 +13,7 @@ interface DropdownActions {
   toggle: Function;
   reposition: (...args: any[]) => {};
 }
+export type EventHandler<T = Event> = (dropdown: DropdownApi, e: T) => boolean | undefined;
 
 export interface DropdownApi {
   uniqueId: string;
@@ -31,8 +32,8 @@ interface BasicDropdownArgs {
   matchTriggerWidth?: boolean;
   renderInPlace?: boolean;
   otherStyles: object;
-  onOpen?: (dropdown: DropdownApi, e: Event) => boolean | undefined;
-  onClose?: (dropdown: DropdownApi, e: Event) => boolean | undefined;
+  onOpen?: EventHandler;
+  onClose?: EventHandler;
   registerAPI?: (dropdown: DropdownApi) => void;
 }
 

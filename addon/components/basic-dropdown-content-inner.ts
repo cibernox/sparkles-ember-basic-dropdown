@@ -1,5 +1,5 @@
 import Component from 'sparkles-component';
-import { DropdownApi } from './basic-dropdown';
+import { DropdownApi, EventHandler } from "./basic-dropdown";
 import { getOwner } from '@ember/application';
 import { scheduleOnce, join } from '@ember/runloop';
 import { getScrollParent } from 'sparkles-ember-basic-dropdown/utils/calculate-position';
@@ -15,11 +15,11 @@ interface BasicDropdownContentInnerArgs {
   id: string;
   dropdown: DropdownApi;
   preventScroll?: boolean
-  onFocusIn?: (dropdown: DropdownApi, e: Event) => boolean | undefined;
-  onFocusOut?: (dropdown: DropdownApi, e: Event) => boolean | undefined;
-  onMouseEnter?: (dropdown: DropdownApi, e: MouseEvent) => boolean | undefined;
-  onMouseLeave?: (dropdown: DropdownApi, e: MouseEvent) => boolean | undefined;
-  onKeyDown?: (dropdown: DropdownApi, e: KeyboardEvent) => boolean | undefined;
+  onFocusIn?: EventHandler;
+  onFocusOut?: EventHandler;
+  onMouseEnter?: EventHandler<MouseEvent>;
+  onMouseLeave?: EventHandler<MouseEvent>;
+  onKeyDown?: EventHandler<KeyboardEvent>;
 }
 
 export default class BasicDropdownContentInner extends Component<BasicDropdownContentInnerArgs> {
