@@ -5,6 +5,7 @@ import { DEBUG } from "@glimmer/env";
 import calculatePosition, {
   PositionInformation
 } from "sparkles-ember-basic-dropdown/utils/calculate-position";
+import require from 'require';
 
 interface DropdownActions {
   open: Function;
@@ -81,7 +82,7 @@ export default class BasicDropdown extends Component<BasicDropdownArgs> {
     let config = getOwner(this).resolveRegistration('config:environment');
     if (config.environment === 'test') {
       if (DEBUG) {
-        return requirejs('@ember/test-helpers/dom/get-root-element').default().id;
+        return require("@ember/test-helpers/dom/get-root-element").default().id;
       }
     }
     return config['ember-basic-dropdown'] && config['ember-basic-dropdown'].destination || 'ember-basic-dropdown-wormhole';
