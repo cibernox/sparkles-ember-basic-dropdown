@@ -3,9 +3,10 @@ import { DropdownApi, EventHandler } from "./basic-dropdown";
 
 const IS_TOUCH_DEVICE = Boolean(!!window && "ontouchstart" in window);
 
+type OpeningEventName = 'mousedown' | 'click';
 interface BasicDropdownTriggerArgs {
-  eventType?: string
-  dropdown: DropdownApi,
+  eventType?: OpeningEventName;
+  dropdown: DropdownApi;
   onMouseDown?: EventHandler<MouseEvent>;
   onMouseEnter?: EventHandler<MouseEvent>;
   onMouseLeave?: EventHandler<MouseEvent>;
@@ -23,7 +24,7 @@ interface BasicDropdownTriggerArgs {
 export default class BasicDropdownTrigger extends Component<BasicDropdownTriggerArgs> {
   triggerEl: HTMLElement | null = null;
   toggleIsBeingHandledByTouchEvents = false;
-  eventType = this.args.eventType || 'mousedown';
+  eventType: OpeningEventName = this.args.eventType || 'mousedown';
   private _isTouchDevice = Object.hasOwnProperty.call(this.args, 'isTouchDevice') ? this.args.isTouchDevice : IS_TOUCH_DEVICE;
   private _hasMoved = false;
 
