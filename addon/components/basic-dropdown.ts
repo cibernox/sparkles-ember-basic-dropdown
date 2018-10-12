@@ -2,12 +2,65 @@ import Component, { tracked } from "sparkles-component";
 import { guidFor } from "@ember/object/internals";
 import { getOwner } from "@ember/application";
 import { DEBUG } from "@glimmer/env";
-import calculatePosition from "../utils/calculate-position";
+import calculatePosition, {
+  PositionInformation
+} from "sparkles-ember-basic-dropdown/utils/calculate-position";
+import require from 'require';
+
+interface DropdownActions {
+  open: Function;
+  close: Function;
+  toggle: Function;
+  reposition: (...args: any[]) => {};
+}
+export type EventHandler<T = Event> = (dropdown: DropdownApi, e: T) => boolean | undefined;
+
+export interface DropdownApi {
+  uniqueId: string;
+  isOpen: boolean;
+  disabled: boolean;
+  actions: DropdownActions
+}
+
+interface BasicDropdownArgs {
+  calculatePosition?: Function
+  destination?: string;
+  initiallyOpened?: boolean;
+  disabled?: boolean;
+  horizontalPosition?: string;
+  verticalPosition?: string;
+  matchTriggerWidth?: boolean;
+  renderInPlace?: boolean;
+  otherStyles: object;
+  onOpen?: EventHandler;
+  onClose?: EventHandler;
+  registerAPI?: (dropdown: DropdownApi) => void;
+}
+
+interface PositionChanges {
+  [k: string]: any
+}
 
 const IGNORED_STYLE_ATTRS = ["top", "left", "right", "width", "height"];
 
-export default class BasicDropdown extends Component {
-  calculatePosition = this.args.calculatePosition || calculatePosition;
+export default class BasicDropdown extends Component<BasicDropdownArgs> {
+  private calculatePosition = this.args.calculatePosition || calculatePosition;
+  private _previousArgs: BasicDropdownArgs = this.args;
+  private previousHorizontalPosition?: string;
+  private previousVerticalPosition?: string;
+  @tracked publicAPI: DropdownApi = {
+    uniqueId: guidFor(this),
+    isOpen: this.args.initiallyOpened || false,
+    disabled: this.args.disabled || false,
+    actions: {
+      open: this.open.bind(this),
+      close: this.close.bind(this),
+      toggle: this.toggle.bind(this),
+      reposition: this.reposition.bind(this)
+    }
+  };
+  contentId = `ember-basic-dropdown-content-${this.publicAPI.uniqueId}`;
+  destinationElement: Element | null = null;
   top = null;
   left = null;
   right = null;
@@ -15,7 +68,14 @@ export default class BasicDropdown extends Component {
   height = null;
   @tracked hPosition = null;
   @tracked vPosition = null;
-  @tracked publicAPI = {};
+  [k: string]: any;
+
+  constructor(args: BasicDropdownArgs) {
+    super(args);
+    this._updateState({});
+    this.contentId = `ember-basic-dropdown-content-${this.publicAPI.uniqueId}`;
+  }
+
   get destination() {
     if (this.args.destination !== undefined) {
       return this.args.destination;
@@ -23,27 +83,10 @@ export default class BasicDropdown extends Component {
     let config = getOwner(this).resolveRegistration('config:environment');
     if (config.environment === 'test') {
       if (DEBUG) {
-        return requirejs('@ember/test-helpers/dom/get-root-element').default().id;
+        return require("@ember/test-helpers/dom/get-root-element").default().id;
       }
     }
     return config['ember-basic-dropdown'] && config['ember-basic-dropdown'].destination || 'ember-basic-dropdown-wormhole';
-  }
-
-  constructor(args) {
-    super(args);
-    this._previousArgs = args;
-    this._updateState({
-      uniqueId: guidFor(this),
-      isOpen: this.args.initiallyOpened || false,
-      disabled: this.args.disabled || false,
-      actions: {
-        open: this.open.bind(this),
-        close: this.close.bind(this),
-        toggle: this.toggle.bind(this),
-        reposition: this.reposition.bind(this)
-      }
-    });
-    this.contentId = `ember-basic-dropdown-content-${this.publicAPI.uniqueId}`;
   }
 
   didUpdate() {
@@ -55,7 +98,7 @@ export default class BasicDropdown extends Component {
     this._previousArgs = this.args;
   }
 
-  open(e) {
+  open(e: Event) {
     if (
       this.publicAPI.disabled ||
       this.publicAPI.isOpen ||
@@ -66,7 +109,7 @@ export default class BasicDropdown extends Component {
     this._updateState({ isOpen: true });
   }
 
-  close(e) {
+  close(e: Event) {
     if (
       this.publicAPI.disabled ||
       !this.publicAPI.isOpen ||
@@ -84,7 +127,7 @@ export default class BasicDropdown extends Component {
     this._updateState({ isOpen: false });
   }
 
-  toggle(e) {
+  toggle(e: Event) {
     if (this.publicAPI.isOpen) {
       this.close(e);
     } else {
@@ -107,25 +150,25 @@ export default class BasicDropdown extends Component {
     let options = {
       horizontalPosition: this.args.horizontalPosition || 'auto',
       verticalPosition: this.args.verticalPosition || 'auto',
-      matchTriggerWidth: this.args.verticalPosition || false,
+      matchTriggerWidth: this.args.matchTriggerWidth || false,
       previousHorizontalPosition: this.previousHorizontalPosition,
       previousVerticalPosition: this.previousVerticalPosition,
-      renderInPlace: this.args.renderInPlace || false
+      renderInPlace: this.args.renderInPlace || false,
+      dropdown: this
     };
-    options.dropdown = this;
     let positionData = this.calculatePosition(triggerElement, dropdownElement, this.destinationElement, options);
     return this._applyReposition(triggerElement, dropdownElement, positionData);
   }
 
-  _updateState(changes) {
+  private _updateState(changes: object) {
     this.publicAPI = Object.assign({}, this.publicAPI, changes);
     if (this.args.registerAPI) {
       this.args.registerAPI(this.publicAPI);
     }
   }
 
-  _applyReposition(_trigger, dropdown, positions) {
-    let changes = {
+  private _applyReposition(_trigger: Element, dropdown: Element, positions: PositionInformation) {
+    let changes: PositionChanges = {
       hPosition: positions.horizontalPosition,
       vPosition: positions.verticalPosition,
       otherStyles: this.args.otherStyles || {}
@@ -184,14 +227,14 @@ export default class BasicDropdown extends Component {
     return changes;
   }
 
-  _disable() {
+  private _disable() {
     if (this.publicAPI.isOpen) {
       this.publicAPI.actions.close();
     }
     this._updateState({ disabled: true });
   }
 
-  _enable() {
+  private _enable() {
     this._updateState({ disabled: false });
   }
 }

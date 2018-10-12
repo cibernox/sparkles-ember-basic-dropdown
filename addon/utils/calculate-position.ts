@@ -1,3 +1,19 @@
+interface CalculatePositionOpts {
+  renderInPlace: boolean;
+  horizontalPosition: string;
+  verticalPosition: string;
+  matchTriggerWidth: boolean;
+  previousHorizontalPosition: string;
+  previousVerticalPosition: string
+}
+interface StyleObj {
+  [k: string]: any
+}
+export interface PositionInformation {
+  horizontalPosition?: string;
+  verticalPosition?: string;
+  style: StyleObj
+}
 /**
   Function used to calculate the position of the content of the dropdown.
   @public
@@ -17,27 +33,38 @@
     - {String} verticalPosition The new vertical position.
     - {Object} CSS properties to be set on the dropdown. It supports `top`, `left`, `right` and `width`.
 */
-export default function (_, _2, _destination, { renderInPlace }) {
-  if (renderInPlace) {
-    return calculateInPlacePosition(...arguments);
+export default function (triggerEl: Element, contentEl: Element, destination: Element, opts: CalculatePositionOpts): PositionInformation {
+  if (opts.renderInPlace) {
+    return calculateInPlacePosition(triggerEl, contentEl, destination, opts);
   } else {
-    return calculateWormholedPosition(...arguments);
+    return calculateWormholedPosition(triggerEl, contentEl, destination, opts);
   }
 }
 
-export function calculateWormholedPosition(trigger, content, destination, { horizontalPosition, verticalPosition, matchTriggerWidth, previousHorizontalPosition, previousVerticalPosition }) {
+export function calculateWormholedPosition(
+  trigger: Element,
+  content: Element,
+  destination: Element,
+  { horizontalPosition, verticalPosition, matchTriggerWidth, previousHorizontalPosition, previousVerticalPosition }: CalculatePositionOpts
+): PositionInformation {
   // Collect information about all the involved DOM elements
   let scroll = { left: window.pageXOffset, top: window.pageYOffset };
   let { left: triggerLeft, top: triggerTop, width: triggerWidth, height: triggerHeight } = trigger.getBoundingClientRect();
   let { height: dropdownHeight, width: dropdownWidth } = content.getBoundingClientRect();
   let viewportWidth = document.body.clientWidth || window.innerWidth;
-  let style = {};
+  let style: StyleObj = {};
 
   // Apply containers' offset
   let anchorElement = destination.parentNode;
+  if (!(anchorElement instanceof HTMLElement)) {
+    throw new Error('The destination element is not in the DOM');
+  }
   let anchorPosition = window.getComputedStyle(anchorElement).position;
   while (anchorPosition !== 'relative' && anchorPosition !== 'absolute' && anchorElement.tagName.toUpperCase() !== 'BODY') {
     anchorElement = anchorElement.parentNode;
+    if (!(anchorElement instanceof HTMLElement)) {
+      throw new Error('The destination element is not in the DOM');
+    }
     anchorPosition = window.getComputedStyle(anchorElement).position;
   }
   if (anchorPosition === 'relative' || anchorPosition === 'absolute') {
@@ -140,9 +167,14 @@ export function calculateWormholedPosition(trigger, content, destination, { hori
   return { horizontalPosition, verticalPosition, style };
 }
 
-export function calculateInPlacePosition(trigger, content, destination, { horizontalPosition, verticalPosition }/*, matchTriggerWidth, previousHorizontalPosition, previousVerticalPosition */) {
+export function calculateInPlacePosition(
+  trigger: Element,
+  content: Element,
+  _destination: Element,
+  { horizontalPosition, verticalPosition }: CalculatePositionOpts
+): PositionInformation {
   let dropdownRect;
-  let positionData = {};
+  let positionData: PositionInformation = { style: {} };
   if (horizontalPosition === 'auto') {
     let triggerRect = trigger.getBoundingClientRect();
     dropdownRect = content.getBoundingClientRect();
@@ -170,18 +202,21 @@ export function calculateInPlacePosition(trigger, content, destination, { horizo
   return positionData;
 }
 
-export function getScrollParent(element) {
+export function getScrollParent(element: Node) {
+  if (!(element instanceof Element)) {
+    throw new Error('getScrollParent should have received a DOM Element, it received a Node instead');
+  }
   let style = window.getComputedStyle(element);
   let excludeStaticParent = style.position === "absolute";
   let overflowRegex = /(auto|scroll)/;
 
   if (style.position === "fixed") return document.body;
-  for (let parent = element; (parent = parent.parentElement);) {
+  for (let parent: Element | null = element; (parent = parent.parentElement);) {
     style = window.getComputedStyle(parent);
     if (excludeStaticParent && style.position === "static") {
       continue;
     }
-    if (overflowRegex.test(style.overflow + style.overflowY + style.overflowX)) {
+    if (style.overflow && overflowRegex.test(style.overflow + style.overflowY + style.overflowX)) {
       return parent;
     }
   }

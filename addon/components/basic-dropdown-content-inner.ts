@@ -1,19 +1,34 @@
 import Component from 'sparkles-component';
+import { DropdownApi, EventHandler } from "./basic-dropdown";
 import { getOwner } from '@ember/application';
 import { scheduleOnce, join } from '@ember/runloop';
-import { getScrollParent } from '../utils/calculate-position';
+import { getScrollParent } from 'sparkles-ember-basic-dropdown/utils/calculate-position';
 import {
   distributeScroll,
   getAvailableScroll,
   getScrollDeltas
-} from '../utils/scroll-helpers';
+} from 'sparkles-ember-basic-dropdown/utils/scroll-helpers';
 
 const IS_TOUCH_DEVICE = Boolean(!!window && 'ontouchstart' in window);
 
-export default class BasicDropdownContentInner extends Component {
-  _handleRootMouseDown = this._handleRootMouseDown.bind(this);
-  _runloopAwareReposition = this._runloopAwareReposition.bind(this);
-  _wheelHandler = this._wheelHandler.bind(this);
+interface BasicDropdownContentInnerArgs {
+  id: string;
+  dropdown: DropdownApi;
+  preventScroll?: boolean
+  onFocusIn?: EventHandler;
+  onFocusOut?: EventHandler;
+  onMouseEnter?: EventHandler<MouseEvent>;
+  onMouseLeave?: EventHandler<MouseEvent>;
+  onKeyDown?: EventHandler<KeyboardEvent>;
+}
+
+export default class BasicDropdownContentInner extends Component<BasicDropdownContentInnerArgs> {
+  private triggerElement: Element | null = null;
+  private dropdownElement: Element | null = null;
+  private scrollableAncestors: Element[] = [];
+  private hasMoved = false;
+  private mutationObserver: MutationObserver | null = null;
+  private _removeScrollHandling?: Function;
   get animationEnabled() {
     let config = getOwner(this).resolveRegistration('config:environment');
     return config.environment !== 'test';
@@ -22,36 +37,29 @@ export default class BasicDropdownContentInner extends Component {
   didInsertElement() {
     let { dropdown, id } = this.args;
     this.triggerElement = this.triggerElement || document.querySelector(`[data-ebd-id=${dropdown.uniqueId}]`);
-    this.dropdownElement = document.getElementById(id);
+    let dropdownElement = this.dropdownElement = document.getElementById(id);
     document.addEventListener('mousedown', this._handleRootMouseDown, true);
     if (IS_TOUCH_DEVICE) {
-      document.addEventListener('touchstart', this.touchStartHandler, true);
+      document.addEventListener('touchstart', this._touchStartHandler, true);
       document.addEventListener('touchend', this._handleRootMouseDown, true);
     }
-    if (this.args.onFocusIn) {
-      this.dropdownElement.addEventListener('focusin', e =>
-        this.args.onFocusIn(dropdown, e)
-      );
-    }
-    if (this.args.onFocusOut) {
-      this.dropdownElement.addEventListener('focusout', e => {
-        this.args.onFocusOut(dropdown, e)
-      });
-    }
-    if (this.args.onMouseEnter) {
-      this.dropdownElement.addEventListener('mouseenter', e =>
-        this.args.onMouseEnter(dropdown, e)
-      );
-    }
-    if (this.args.onMouseLeave) {
-      this.dropdownElement.addEventListener('mouseleave', e =>
-        this.args.onMouseLeave(dropdown, e)
-      );
-    }
-    if (this.args.onKeyDown) {
-      this.dropdownElement.addEventListener('keydown', e =>
-        this.args.onKeyDown(dropdown, e)
-      );
+    if (dropdownElement) {
+      const { onFocusIn, onFocusOut, onMouseEnter, onMouseLeave, onKeyDown } = this.args;
+      if (onFocusIn) {
+        dropdownElement.addEventListener('focusin', e => onFocusIn(dropdown, e));
+      }
+      if (onFocusOut) {
+        dropdownElement.addEventListener('focusout', e => onFocusOut(dropdown, e));
+      }
+      if (onMouseEnter) {
+        dropdownElement.addEventListener('mouseenter', e => onMouseEnter(dropdown, e));
+      }
+      if (onMouseLeave) {
+        dropdownElement.addEventListener('mouseleave', e => onMouseLeave(dropdown, e));
+      }
+      if (onKeyDown) {
+        dropdownElement.addEventListener('keydown', e => onKeyDown(dropdown, e));
+      }
     }
 
     dropdown.actions.reposition();
@@ -69,27 +77,33 @@ export default class BasicDropdownContentInner extends Component {
 
   destroy() {
     this._removeGlobalEvents();
-    this._removeScrollHandling();
+    if (this._removeScrollHandling) {
+      this._removeScrollHandling();
+    }
     this.scrollableAncestors = [];
     this._stopObservingDomMutations();
     document.removeEventListener('mousedown', this._handleRootMouseDown, true);
     if (IS_TOUCH_DEVICE) {
-      document.removeEventListener("touchstart", this.touchStartHandler, true);
+      document.removeEventListener("touchstart", this._touchStartHandler, true);
       document.removeEventListener("touchend", this._handleRootMouseDown, true);
     }
-    if (this.animationEnabled) {
+    if (this.animationEnabled && this.dropdownElement) {
       this._animateOut(this.dropdownElement);
     }
     this.dropdownElement = null;
   }
 
-  _handleRootMouseDown(e) {
-    if (this.hasMoved || this.dropdownElement.contains(e.target) || this.triggerElement && this.triggerElement.contains(e.target)) {
+  private _handleRootMouseDown = (e: MouseEvent) => {
+    if (
+      this.hasMoved ||
+      this.dropdownElement && this.dropdownElement.contains(e.target as Element) ||
+      (this.triggerElement && this.triggerElement.contains(e.target as Element))
+    ) {
       this.hasMoved = false;
       return;
     }
 
-    if (dropdownIsValidParent(e.target, this.args.id)) {
+    if (dropdownIsValidParent(e.target as Element, this.args.id)) {
       this.hasMoved = false;
       return;
     }
@@ -97,30 +111,43 @@ export default class BasicDropdownContentInner extends Component {
     this.args.dropdown.actions.close(e, true);
   }
 
+  private _touchStartHandler = () => {
+    document.addEventListener('touchmove', this._touchMoveHandler, true);
+  }
+
+  private _touchMoveHandler = () => {
+    this.hasMoved = true;
+    document.removeEventListener('touchmove', this._touchMoveHandler, true);
+  }
+
   // All ancestors with scroll (except the BODY, which is treated differently)
-  _getScrollableAncestors() {
-    let scrollableAncestors = [];
+  private _getScrollableAncestors(): Element[] {
+    let scrollableAncestors: Element[] = [];
     if (this.triggerElement) {
-      let nextScrollable = getScrollParent(this.triggerElement.parentNode);
-      while (nextScrollable && nextScrollable.tagName.toUpperCase() !== 'BODY' && nextScrollable.tagName.toUpperCase() !== 'HTML') {
-        scrollableAncestors.push(nextScrollable);
-        nextScrollable = getScrollParent(nextScrollable.parentNode);
+      let parent = this.triggerElement.parentNode;
+      if (parent instanceof Element) {
+        let nextScrollable: Element | null= getScrollParent(parent);
+        while (nextScrollable && nextScrollable.tagName.toUpperCase() !== 'BODY' && nextScrollable.tagName.toUpperCase() !== 'HTML') {
+          scrollableAncestors.push(nextScrollable);
+          parent = nextScrollable.parentNode;
+          nextScrollable = parent && getScrollParent(parent);
+        }
       }
     }
     return scrollableAncestors;
   }
 
-  _addGlobalEvents() {
+  private _addGlobalEvents() {
     window.addEventListener('resize', this._runloopAwareReposition);
     window.addEventListener('orientationchange', this._runloopAwareReposition);
   }
 
-  _removeGlobalEvents() {
+  private _removeGlobalEvents() {
     window.removeEventListener('resize', this._runloopAwareReposition);
     window.removeEventListener('orientationchange', this._runloopAwareReposition);
   }
 
-  _addScrollHandling() {
+  private _addScrollHandling() {
     if (this.args.preventScroll === true) {
       this._addPreventScrollEvent();
       this._removeScrollHandling = this._removePreventScrollEvent;
@@ -132,19 +159,22 @@ export default class BasicDropdownContentInner extends Component {
 
   // These two functions wire up scroll handling if `args.preventScroll` is true.
   // These prevent all scrolling that isn't inside of the dropdown.
-  _addPreventScrollEvent() {
+  private _addPreventScrollEvent() {
     document.addEventListener('wheel', this._wheelHandler, { capture: true, passive: false });
   }
 
-  _removePreventScrollEvent() {
-    document.removeEventListener('wheel', this._wheelHandler, { capture: true, passive: false });
+  private _removePreventScrollEvent() {
+    document.removeEventListener('wheel', this._wheelHandler, { capture: true });
   }
 
-  _wheelHandler(event) {
+  private _wheelHandler = (event: WheelEvent) => {
     const element = this.dropdownElement;
-    if (element.contains(event.target) || element === event.target) {
+    if (event.target === null) {
+      return;
+    }
+    if (element !== null && element.contains(event.target as Element) || element === event.target) {
       // Discover the amount of scrollable canvas that is within the dropdown.
-      const availableScroll = getAvailableScroll(event.target, element);
+      const availableScroll = getAvailableScroll(event.target as Element, element);
 
       // Calculate what the event's desired change to that scrollable canvas is.
       let { deltaX, deltaY } = getScrollDeltas(event);
@@ -173,7 +203,7 @@ export default class BasicDropdownContentInner extends Component {
 
       // Also, don't attempt to do this if both of `deltaX` or `deltaY` are 0.
       if (event.defaultPrevented && (deltaX || deltaY)) {
-        distributeScroll(deltaX, deltaY, event.target, element);
+        distributeScroll(deltaX, deltaY, event.target as Element, element);
       }
     } else {
       // Scrolling outside of the dropdown is prohibited.
@@ -183,44 +213,46 @@ export default class BasicDropdownContentInner extends Component {
 
   // These two functions wire up scroll handling if `args.preventScroll` is false.
   // These trigger reposition of the dropdown.
-  _addScrollEvents() {
+  private _addScrollEvents() {
     window.addEventListener('scroll', this._runloopAwareReposition);
     this.scrollableAncestors.forEach((el) => {
       el.addEventListener('scroll', this._runloopAwareReposition);
     });
   }
 
-  _removeScrollEvents() {
+  private _removeScrollEvents() {
     window.removeEventListener('scroll', this._runloopAwareReposition);
     this.scrollableAncestors.forEach((el) => {
       el.removeEventListener('scroll', this._runloopAwareReposition);
     });
   }
 
-  _startObservingDomMutations() {
-    this.mutationObserver = new MutationObserver((mutations) => {
-      if (mutations[0].addedNodes.length || mutations[0].removedNodes.length) {
-        this._runloopAwareReposition();
-      }
-    });
-    this.mutationObserver.observe(this.dropdownElement, { childList: true, subtree: true });
+  private _startObservingDomMutations() {
+    if (this.dropdownElement !== null) {
+      this.mutationObserver = new MutationObserver((mutations) => {
+        if (mutations[0].addedNodes.length || mutations[0].removedNodes.length) {
+          this._runloopAwareReposition();
+        }
+      });
+      this.mutationObserver.observe(this.dropdownElement, { childList: true, subtree: true });
+    }
   }
 
-  _stopObservingDomMutations() {
+  private _stopObservingDomMutations() {
     if (this.mutationObserver) {
       this.mutationObserver.disconnect();
       this.mutationObserver = null;
     }
   }
 
-  _animateIn() {
+  private _animateIn() {
     console.log('_animateIn not yet implemented');
     // waitForAnimations(this.dropdownElement, () => {
       //   this.set('animationClass', this.get('transitionedInClass'));
       // });
-    }
+  }
 
-  _animateOut(dropdownElement) {
+  private _animateOut(_dropdownElement: Element) {
       console.log('_animateOut not yet implemented');
     // let parentElement = this.get('renderInPlace') ? dropdownElement.parentElement.parentElement : dropdownElement.parentElement;
     // let clone = dropdownElement.cloneNode(true);
@@ -235,17 +267,18 @@ export default class BasicDropdownContentInner extends Component {
     // });
   }
 
-  _runloopAwareReposition() {
+  private _runloopAwareReposition = () => {
     join(this.args.dropdown.actions.reposition);
   }
 }
 
 
-function closestContent(el) {
-  while (el && (!el.classList || !el.classList.contains('ember-basic-dropdown-content'))) {
-    el = el.parentElement;
+function closestContent(el: Element): Element | null {
+  let pointer: Element | null = el;
+  while (pointer && (!pointer.classList || !pointer.classList.contains('ember-basic-dropdown-content'))) {
+    pointer = pointer.parentElement;
   }
-  return el;
+  return pointer;
 }
 
 /**
@@ -254,12 +287,19 @@ function closestContent(el) {
  * @param {HTMLElement} el
  * @param {String} dropdownId
  */
-function dropdownIsValidParent(el, dropdownId) {
+function dropdownIsValidParent(el: Element, dropdownId: string): boolean {
   let closestDropdown = closestContent(el);
   if (closestDropdown) {
-    let trigger = document.querySelector(`[aria-owns=${closestDropdown.attributes.id.value}]`);
+    let trigger = document.querySelector(`[aria-owns=${closestDropdown.getAttribute('id')}]`);
+    if (trigger === null) {
+      return false;
+    }
     let parentDropdown = closestContent(trigger);
-    return parentDropdown && parentDropdown.attributes.id.value === dropdownId || dropdownIsValidParent(parentDropdown, dropdownId);
+    if (parentDropdown) {
+      return parentDropdown.getAttribute("id") === dropdownId || dropdownIsValidParent(parentDropdown, dropdownId);
+    } else {
+      return false;
+    }
   } else {
     return false;
   }

@@ -1,15 +1,32 @@
-import Component, { tracked } from "sparkles-component";
+import Component from 'sparkles-component';
+import { DropdownApi, EventHandler } from "./basic-dropdown";
+
 const IS_TOUCH_DEVICE = Boolean(!!window && "ontouchstart" in window);
 
-export default class BasicDropdownTrigger extends Component {
-  _handleMouseDown = this._handleMouseDown.bind(this);
-  _touchMoveHandler = this._touchMoveHandler.bind(this);
-  _isTouchDevice = Object.hasOwnProperty.call(this.args, 'isTouchDevice') ? this.args.isTouchDevice : IS_TOUCH_DEVICE;
+type OpeningEventName = 'mousedown' | 'click';
+interface BasicDropdownTriggerArgs {
+  eventType?: OpeningEventName;
+  dropdown: DropdownApi;
+  onMouseDown?: EventHandler<MouseEvent>;
+  onMouseEnter?: EventHandler<MouseEvent>;
+  onMouseLeave?: EventHandler<MouseEvent>;
+  onFocus?: EventHandler<FocusEvent>;
+  onBlur?: EventHandler<FocusEvent>;
+  onTouchEnd?: EventHandler<TouchEvent>;
+  onFocusIn?: EventHandler;
+  onFocusOut?: EventHandler;
+  onKeyDown?: EventHandler<KeyboardEvent>
+  onKeyUp?: EventHandler<KeyboardEvent>
+  isTouchDevice?: boolean,
+  stopPropagation?: boolean
+}
 
-  @tracked('args.eventType')
-  get eventType() {
-    return this.args.eventType || 'mousedown';
-  }
+export default class BasicDropdownTrigger extends Component<BasicDropdownTriggerArgs> {
+  triggerEl: HTMLElement | null = null;
+  toggleIsBeingHandledByTouchEvents = false;
+  eventType: OpeningEventName = this.args.eventType || 'mousedown';
+  private _isTouchDevice = Object.hasOwnProperty.call(this.args, 'isTouchDevice') ? this.args.isTouchDevice : IS_TOUCH_DEVICE;
+  private _hasMoved = false;
 
   didInsertElement() {
     this.triggerEl = document.querySelector(`[data-ebd-id="${this.args.dropdown.uniqueId}"]`);
@@ -17,8 +34,10 @@ export default class BasicDropdownTrigger extends Component {
     this._addOptionalHandlers();
   }
 
-  _addMandatoryHandlers() {
-    // this.triggerEl.addEventListener("mousedown", this._handleMouseDown);
+  private _addMandatoryHandlers() {
+    if (this.triggerEl === null) {
+      return;
+    }
     if (this._isTouchDevice) {
       // If the component opens on click there is no need of any of this, as the device will
       // take care tell apart faux clicks from scrolls.
@@ -32,31 +51,35 @@ export default class BasicDropdownTrigger extends Component {
     this.triggerEl.addEventListener('keydown', e => this._handleKeyDown(e));
   }
 
-  _addOptionalHandlers() {
-    if (this.args.onMouseEnter) {
-      this.triggerEl.addEventListener('mouseenter', (e) => this.args.onMouseEnter(this.args.dropdown, e));
+  private _addOptionalHandlers() {
+    if (this.triggerEl === null) {
+      return;
     }
-    if (this.args.onMouseLeave) {
-      this.triggerEl.addEventListener('mouseleave', (e) => this.args.onMouseLeave(this.args.dropdown, e));
+    const { onMouseEnter, onMouseLeave, onFocus, onBlur, onFocusIn, onFocusOut, onKeyUp, dropdown } = this.args;
+    if (onMouseEnter) {
+      this.triggerEl.addEventListener("mouseenter", e => onMouseEnter(this.args.dropdown, e));
     }
-    if (this.args.onFocus) {
-      this.triggerEl.addEventListener('focus', (e) => this.args.onFocus(this.args.dropdown, e));
+    if (onMouseLeave) {
+      this.triggerEl.addEventListener('mouseleave', (e) => onMouseLeave(dropdown, e));
     }
-    if (this.args.onBlur) {
-      this.triggerEl.addEventListener('blur', (e) => this.args.onBlur(this.args.dropdown, e));
+    if (onFocus) {
+      this.triggerEl.addEventListener('focus', (e) => onFocus(dropdown, e));
     }
-    if (this.args.onFocusIn) {
-      this.triggerEl.addEventListener('focusin', (e) => this.args.onFocusIn(this.args.dropdown, e));
+    if (onBlur) {
+      this.triggerEl.addEventListener('blur', (e) => onBlur(dropdown, e));
     }
-    if (this.args.onFocusOut) {
-      this.triggerEl.addEventListener('focusout', (e) => this.args.onFocusOut(this.args.dropdown, e));
+    if (onFocusIn) {
+      this.triggerEl.addEventListener('focusin', (e) => onFocusIn(dropdown, e));
     }
-    if (this.args.onKeyUp) {
-      this.triggerEl.addEventListener('keyup', (e) => this.args.onKeyUp(this.args.dropdown, e));
+    if (onFocusOut) {
+      this.triggerEl.addEventListener('focusout', (e) => onFocusOut(dropdown, e));
+    }
+    if (onKeyUp) {
+      this.triggerEl.addEventListener('keyup', (e) => onKeyUp(dropdown, e));
     }
   }
 
-  _handleClick(e) {
+  private _handleClick(e: MouseEvent) {
     let { dropdown, stopPropagation, eventType = 'click' } = this.args;
     if (!dropdown || dropdown.disabled) {
       return;
@@ -76,8 +99,8 @@ export default class BasicDropdownTrigger extends Component {
     }
   }
 
-  _handleMouseDown(e) {
-    let { dropdown, onMouseDown, stopPropagation, eventType = "click" } = this.args;
+  private _handleMouseDown = (e: MouseEvent) => {
+    let { dropdown, onMouseDown, stopPropagation, eventType = 'click' } = this.args;
 
     if (dropdown.disabled || (onMouseDown && onMouseDown(dropdown, e) === false)) {
       return;
@@ -99,7 +122,12 @@ export default class BasicDropdownTrigger extends Component {
     }
   }
 
-  _handleKeyDown(e) {
+  private _handleMouseup = () => {
+    document.removeEventListener('mouseup', this._handleMouseup, true);
+    document.body.classList.remove('ember-basic-dropdown-text-select-disabled');
+  }
+
+  private _handleKeyDown(e: KeyboardEvent) {
     let { dropdown, onKeyDown } = this.args;
     if (dropdown.disabled || (onKeyDown && onKeyDown(dropdown, e) === false)) {
       return;
@@ -114,18 +142,18 @@ export default class BasicDropdownTrigger extends Component {
     }
   }
 
-  _touchMoveHandler() {
-    this.hasMoved = true;
+  private _touchMoveHandler = () => {
+    this._hasMoved = true;
     document.removeEventListener('touchmove', this._touchMoveHandler);
   }
 
-  _handleTouchEnd(e) {
+  private _handleTouchEnd = (e: TouchEvent) => {
     this.toggleIsBeingHandledByTouchEvents = true;
     let { dropdown } = this.args;
     if (e && e.defaultPrevented || dropdown.disabled) {
       return;
     }
-    if (!this.hasMoved) {
+    if (!this._hasMoved) {
       // execute user-supplied onTouchEnd function before default toggle action;
       // short-circuit default behavior if user-supplied function returns `false`
       if (this.args.onTouchEnd && this.args.onTouchEnd(dropdown, e) === false) {
@@ -133,29 +161,30 @@ export default class BasicDropdownTrigger extends Component {
       }
       dropdown.actions.toggle(e);
     }
-    this.hasMoved = false;
+    this._hasMoved = false;
     document.removeEventListener('touchmove', this._touchMoveHandler);
     // This next three lines are stolen from hammertime. This prevents the default
     // behaviour of the touchend, but synthetically trigger a focus and a (delayed) click
     // to simulate natural behaviour.
-    e.target.focus();
+    if (e.target instanceof HTMLElement) {
+      e.target.focus();
+    }
     setTimeout(function () {
       if (!e.target) { return; }
-      let event;
+      let event: Event;
       try {
         event = document.createEvent('MouseEvents');
-        event.initMouseEvent('click', true, true, window);
+        (event as MouseEvent).initMouseEvent('click', true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 1, null);
       } catch (e) {
         event = new Event('click');
-      } finally {
-        e.target.dispatchEvent(event);
       }
+      e.target.dispatchEvent(event);
     }, 0);
     e.preventDefault();
   }
 
-  _stopTextSelectionUntilMouseup() {
-    document.addEventListener('mouseup', this._mouseupHandler, true);
+  private _stopTextSelectionUntilMouseup() {
+    document.addEventListener('mouseup', this._handleMouseup, true);
     document.body.classList.add('ember-basic-dropdown-text-select-disabled');
   }
 }
